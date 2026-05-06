@@ -73,6 +73,9 @@ data/*/*.txt
 data/*/*.tsv
 data/*/*.csv
 data/*/*.seg
+data/*/*.vcf
+data/*/*.vcf.gz
+data/*/*.pkl
 data/*/*.xlsx
 data/*/*.xls
 
