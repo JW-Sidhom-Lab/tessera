@@ -72,6 +72,7 @@ data/*/*.maf.gz
 data/*/*.txt
 data/*/*.tsv
 data/*/*.csv
+data/*/*.seg
 data/*/*.xlsx
 data/*/*.xls
 
