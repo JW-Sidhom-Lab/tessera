@@ -1,0 +1,150 @@
+# =============================================================================
+# TESSERA .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Reference genomes (downloaded by users via download_ref_genomes.sh; too large
+# for git — ~3 GB each). The .fai indexes are small (~10 KB) and may be useful
+# to ship; uncomment the .fai lines below if you ever want to gitignore them too.
+# -----------------------------------------------------------------------------
+*.fna
+*.fna.gz
+# *.fna.fai
+
+# -----------------------------------------------------------------------------
+# Model weights (hosted on Hugging Face Hub; not redistributed via git)
+# -----------------------------------------------------------------------------
+*.h5
+*.keras
+*.ckpt
+*.pb
+*.pt
+*.pth
+*.safetensors
+saved_model/
+checkpoints/
+models/
+
+# -----------------------------------------------------------------------------
+# Training logs / TensorBoard / experiment artefacts
+# -----------------------------------------------------------------------------
+logs/
+tb_logs/
+runs/
+events.out.tfevents.*
+*.tfevents.*
+*.log
+wandb/
+mlruns/
+
+# -----------------------------------------------------------------------------
+# Local data (cohort outputs, intermediate features, predictions)
+# -----------------------------------------------------------------------------
+data/cache/
+data/processed/
+data/raw/
+*.npy
+*.npz
+*.parquet
+features/
+multimodal_features/
+
+# -----------------------------------------------------------------------------
+# Python: byte-compiled / optimised
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# -----------------------------------------------------------------------------
+# Python: distribution / packaging
+# -----------------------------------------------------------------------------
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+MANIFEST
+.installed.cfg
+
+# -----------------------------------------------------------------------------
+# Python: testing / coverage
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# -----------------------------------------------------------------------------
+# Python: type checking
+# -----------------------------------------------------------------------------
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# -----------------------------------------------------------------------------
+# Jupyter / IPython
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# -----------------------------------------------------------------------------
+# Virtual environments
+# -----------------------------------------------------------------------------
+.env
+.env.*
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.python-version
+
+# -----------------------------------------------------------------------------
+# IDEs / editors
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+.spyderproject
+.spyproject
+
+# -----------------------------------------------------------------------------
+# OS metadata
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# Project-specific (TESSERA)
+# -----------------------------------------------------------------------------
+# Local-only configuration overrides
+local_config.py
+local_settings.py
+
+# Dropbox conflict copies (in case the repo lives in Dropbox)
+* (* conflicted copy *).*
