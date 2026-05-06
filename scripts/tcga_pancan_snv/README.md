@@ -8,11 +8,8 @@ consume.
 ## Pipeline
 
 ```
-data/TCGA_PanCan/clinical.csv + TCGA.csv          (Stage 1, scripts/data/tcga/)
-                       │
-                       ▼
-        scripts/data/tcga/train_data_snv.csv,
-        scripts/data/tcga/valid_data_snv.csv      (Stage 2, model-ready CSVs)
+scripts/data/tcga/train_data_snv.csv
+scripts/data/tcga/valid_data_snv.csv     (model-ready CSVs from upstream)
                        │
                        ▼
                   fit_model.py    (7 models trained)
@@ -28,6 +25,13 @@ var_features/    var_loss/          var_attn/
                        ▼
                 plot_accuracy.py   (Figure 1 b-g, Supplementary Fig. 1-2)
 ```
+
+The two upstream CSVs are produced by the data-prep pipeline at
+[`scripts/data/tcga/`](../data/tcga/README.md), which itself reads the raw
+TCGA Pan-Cancer release files documented in
+[`data/TCGA_PanCan/`](../../data/TCGA_PanCan/README.md). Clinical metadata
+(tumour type, etc.) is already baked into the train/valid CSVs by that
+upstream stage, so the scripts here never read `clinical.csv` directly.
 
 ## Configurations
 
