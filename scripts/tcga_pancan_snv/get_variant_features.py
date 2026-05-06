@@ -16,8 +16,9 @@ Output
 
 Usage
 -----
-    python get_variant_features.py                                   # baseline / 1
-    CONFIG=local CONTEXT_LEN=25 python get_variant_features.py
+    python get_variant_features.py                                   # local / 25
+    CONFIG=baseline CONTEXT_LEN=1 python get_variant_features.py
+    CONFIG=global   CONTEXT_LEN=25 python get_variant_features.py
 """
 
 import importlib
@@ -31,8 +32,8 @@ from tessera.model import TESSERA
 # ============================================================================
 # Configuration (edit or set env vars to override)
 # ============================================================================
-CONFIG_NAME = os.environ.get("CONFIG", "baseline")          # baseline | local | global
-CONTEXT_LEN = int(os.environ.get("CONTEXT_LEN", "1"))
+CONFIG_NAME = os.environ.get("CONFIG", "local")             # baseline | local | global
+CONTEXT_LEN = int(os.environ.get("CONTEXT_LEN", "25"))
 TRAIN_DATA_PATH = os.environ.get("TRAIN_DATA", "../data/tcga/train_data_snv.csv")
 VALID_DATA_PATH = os.environ.get("VALID_DATA", "../data/tcga/valid_data_snv.csv")
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "var_features")

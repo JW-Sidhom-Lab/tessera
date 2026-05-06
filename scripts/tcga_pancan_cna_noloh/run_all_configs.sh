@@ -6,7 +6,11 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-ATTN_BLOCKS=("${@:-0 1 2}")
+if [ "$#" -eq 0 ]; then
+    ATTN_BLOCKS=(0 1 2)
+else
+    ATTN_BLOCKS=("$@")
+fi
 
 for n in "${ATTN_BLOCKS[@]}"; do
     echo "=== Training NoLOH cna_attention_blocks=${n} ==="
