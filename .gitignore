@@ -49,6 +49,32 @@ data/raw/
 features/
 multimodal_features/
 
+# Per-script artefact directories (cached features, losses, plots, embeddings).
+# These contain the outputs of running the orchestration scripts under scripts/X
+# and are gitignored by directory name. They typically hold .pkl, .h5, .pdf, .png
+# or other large cached artefacts that should never enter the public repo.
+scripts/*/var_features/
+scripts/*/var_loss/
+scripts/*/plots/
+scripts/*/models/
+scripts/*/embeddings/
+scripts/*/features/
+scripts/*/predictions/
+scripts/*/results/
+scripts/*/runs/
+
+# Per-cohort raw and derived data files under data/<cohort>/. Users download
+# the raw data from the original sources documented in each cohort's scripts
+# (e.g. GDC PanCanAtlas for TCGA) and regenerate the derived CSVs by running
+# the create_training_data*.py scripts. The .py scripts themselves stay tracked.
+data/*/*.maf
+data/*/*.maf.gz
+data/*/*.txt
+data/*/*.tsv
+data/*/*.csv
+data/*/*.xlsx
+data/*/*.xls
+
 # -----------------------------------------------------------------------------
 # Python: byte-compiled / optimised
 # -----------------------------------------------------------------------------
