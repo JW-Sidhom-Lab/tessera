@@ -14,12 +14,13 @@ agreement are required.
 **Project page:** https://www.synapse.org/genie
 **Direct accession:** `syn7222066` (browse the v18.0 public release).
 
-Files needed for SNV validation:
+Files needed:
 
 | File | Size | Notes |
 |---|---|---|
 | `data_mutations_extended.txt` | 837 MB | Mutations MAF (cBioPortal/GENIE format) |
 | `data_clinical_sample.txt` | 36 MB | Sample-level clinical (cBioPortal four-row metadata header) |
+| `genomic_information.txt` | 55 MB | Per-panel gene/exon coordinates. Not used by this directory's `create_training_data.py`, but read by `scripts/data/msk_chord/create_cna.py` for IMPACT panel filtering. |
 
 `data_clinical_patient.txt` (19 MB) is also typically downloaded with the
 release; it is not consumed by this pipeline directly but kept alongside for
