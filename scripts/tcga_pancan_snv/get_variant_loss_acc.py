@@ -1,0 +1,96 @@
+"""Extract per-variant masked-token reconstruction loss and predictions from a trained TESSERA SNV model.
+
+Loads the TCGA training and validation SNV tables plus a trained model,
+runs the model in inference mode with ``return_loss=True`` to get per-
+variant cross-entropy losses and predicted ref/alt logits, and saves
+the result to ``var_loss/<model_name>_loss_variant.pkl``. The output
+is a list ``[out_train, out_valid]``; each element is a dict from the
+TESSERA inference API.
+
+The downstream ``plot_accuracy.py`` reads these .pkl files to compute
+masked-token accuracy by sample, by tumor type, by variant burden, etc.
+(Figure 1 b-g panels).
+
+Inputs
+------
+``../data/tcga/train_data_snv.csv``
+``../data/tcga/valid_data_snv.csv``
+
+Output
+------
+``var_loss/<model_name>_loss_variant.pkl``
+
+Usage
+-----
+    python get_variant_loss_acc.py                                   # baseline / 1
+    CONFIG=local CONTEXT_LEN=25 python get_variant_loss_acc.py
+"""
+
+import importlib
+import os
+import pickle
+
+import pandas as pd
+
+from tessera.model import TESSERA
+
+# ============================================================================
+# Configuration (edit or set env vars to override)
+# ============================================================================
+CONFIG_NAME = os.environ.get("CONFIG", "baseline")          # baseline | local | global
+CONTEXT_LEN = int(os.environ.get("CONTEXT_LEN", "1"))
+TRAIN_DATA_PATH = os.environ.get("TRAIN_DATA", "../data/tcga/train_data_snv.csv")
+VALID_DATA_PATH = os.environ.get("VALID_DATA", "../data/tcga/valid_data_snv.csv")
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "var_loss")
+
+cfg = importlib.import_module(f"model_config_{CONFIG_NAME}")
+MODEL_NAME = ("TCGA_PanCan_SNV_baseline" if CONFIG_NAME == "baseline"
+              else f"TCGA_PanCan_SNV_{CONFIG_NAME}_{CONTEXT_LEN}")
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# ============================================================================
+# Load data
+# ============================================================================
+train_data = pd.read_csv(TRAIN_DATA_PATH)
+valid_data = pd.read_csv(VALID_DATA_PATH)
+
+# ============================================================================
+# Build model and run inference
+# ============================================================================
+model = TESSERA(name=MODEL_NAME, use_distributed=cfg.use_distributed,
+                jit_compile=False, mixed_precision=False)
+ref_len = alt_len = 1 if cfg.mut_type == "SNV" else 10
+
+model.create_sample_dataset(
+    train_data["Tumor_Sample_Barcode"].values,
+    train_data["Chromosome"].values,
+    train_data["Start_Position"].values,
+    train_data["Reference_Allele"].values,
+    train_data["Tumor_Seq_Allele2"].values,
+    vaf=train_data["vaf"].values, name="train_dataset",
+    context_len=CONTEXT_LEN, batch_size=cfg.batch_size,
+    is_training=False, subsample=cfg.subsample, fixed_bag_size=True,
+    ref_len=ref_len, alt_len=alt_len,
+)
+model.create_sample_dataset(
+    valid_data["Tumor_Sample_Barcode"].values,
+    valid_data["Chromosome"].values,
+    valid_data["Start_Position"].values,
+    valid_data["Reference_Allele"].values,
+    valid_data["Tumor_Seq_Allele2"].values,
+    vaf=valid_data["vaf"].values, name="valid_dataset",
+    context_len=CONTEXT_LEN, batch_size=cfg.batch_size,
+    is_training=False, subsample=cfg.subsample, fixed_bag_size=True,
+    ref_len=ref_len, alt_len=alt_len,
+)
+
+out_kwargs = dict(return_logits=True, return_true_values=True,
+                  return_loss=True, non_zero_only=False, return_ref=True)
+out_train = model.get_variant_probabilities(dataset_name="train_dataset", **out_kwargs)
+out_valid = model.get_variant_probabilities(dataset_name="valid_dataset", **out_kwargs)
+
+out_path = os.path.join(OUTPUT_DIR, f"{MODEL_NAME}_loss_variant.pkl")
+with open(out_path, "wb") as f:
+    pickle.dump([out_train, out_valid], f, protocol=pickle.HIGHEST_PROTOCOL)
+print(f"Wrote {out_path}")
