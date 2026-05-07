@@ -18,8 +18,10 @@ comparator).
 `build_brca_metadata.py`:
 
 1. Load `clinical.csv`, restrict to `type=='BRCA'`, remap each curated
-   event code `2 -> 0` (Liu 2018 ambiguous-cause -> censored), rename
-   the `_cr`-suffixed pairs to legacy names.
+   event code `2 -> 0` (Liu 2018 ambiguous-cause -> censored), drop
+   the `.cr` / `_cr` suffix when writing the columns (`DSS_cr` ->
+   `DSS`, `DSS.time.cr` -> `DSS.time`, and analogously for `DFI`,
+   `PFI`).
 2. Load `DLRS_tcga_brca_complete.csv`, deduplicate to one row per
    patient (DLRS is per-slide), tertile-bin the continuous OncotypeDX
    RS within the DLRS cohort into Low / Intermediate / High.

@@ -20,8 +20,9 @@ endpoints for the TCGA glioma cohort. Used by Figure 4 g-h
    WHO 2021 label (`glioblastoma` / `astrocytoma` /
    `oligodendroglioma` / `unclassified`); deduplicate.
 2. Load `clinical.csv`; remap each curated event code `2 -> 0` (Liu
-   2018 ambiguous-cause-of-death -> censored); rename the
-   `_cr`-suffixed pairs to legacy names (`DSS`, `DSS.time`, etc.).
+   2018 ambiguous-cause-of-death -> censored); drop the `.cr` /
+   `_cr` suffix when writing the columns (`DSS_cr` -> `DSS`,
+   `DSS.time.cr` -> `DSS.time`, and analogously for `DFI`, `PFI`).
 3. Inner-join on `Patient_ID` and write
    `glioma_clinical_metadata.csv`.
 

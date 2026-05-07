@@ -33,10 +33,12 @@ Each subdirectory ships:
   columns are strictly binary (`{0, 1}`), matching the convention
   `lifelines` expects and the convention applied by the Figure 4
   concordance scripts.
-- **Endpoints**: BRCA and glioma emit DSS / DFI / PFI under their
-  legacy (non-`_cr`) names; PRAD additionally retains the full set of
-  Liu 2018 endpoint variants (`PFI.1` is the recommended primary
-  endpoint for PRAD because OS is underpowered, ~10 events).
+- **Endpoint columns**: glioma and BRCA emit the curated DSS / DFI /
+  PFI values (the `_cr` columns from `clinical.csv` after the
+  ambiguous-cause remap) under the simpler names `DSS`, `DFI`, `PFI`.
+  PRAD keeps the original `_cr` column names plus the full set of Liu
+  2018 endpoint variants (`PFI.1` is the recommended primary endpoint
+  for PRAD because DSS is underpowered, ~5 events).
 - **Reference papers** (PDFs of Leiria 2025, Howard 2023, Laajala 2023)
   are not shipped to keep the repository copyright-clean; full
   citations live in each cohort's README and build-script docstring.

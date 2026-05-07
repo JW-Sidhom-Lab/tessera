@@ -10,7 +10,7 @@ Cox of the TESSERA risk score against the Decipher comparator).
 | File | Source |
 |---|---|
 | `curatedPCaData_tcga_scores_20230215.Rds` | Laajala et al. 2023, *Scientific Data* **10**, 430. Bioconductor ExperimentHub resource `EH8024`. Four transcriptomic signature scores computed under a single uniform RNA-seq pipeline (table below). |
-| `../../TCGA_PanCan/clinical.csv` | Liu et al. 2018, *Cell* **173**, 400-416.e11. Curated PRAD endpoints. `PFI.1` is the Liu 2018 recommended primary endpoint for PRAD (OS is underpowered, ~10 events). |
+| `../../TCGA_PanCan/clinical.csv` | Liu et al. 2018, *Cell* **173**, 400-416.e11. Curated PRAD endpoints. `PFI.1` is the Liu 2018 recommended primary endpoint for PRAD (DSS is underpowered, ~5 events). |
 
 | Score column | Signature |
 |---|---|
