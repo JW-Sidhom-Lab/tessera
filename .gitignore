@@ -57,6 +57,9 @@ scripts/*/var_features/
 scripts/*/var_loss/
 scripts/*/plots/
 scripts/*/models/
+scripts/*/models_old/
+scripts/*/multimodal_features/
+scripts/*/multimodal_loss/
 scripts/*/embeddings/
 scripts/*/features/
 scripts/*/predictions/
