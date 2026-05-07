@@ -19,22 +19,40 @@ The fastest way to use TESSERA is via the public inference API on Hugging Face; 
 
 🔗 **Inference API**: [huggingface.co/spaces/JW-Sidhom-Lab/tessera](https://huggingface.co/spaces/JW-Sidhom-Lab/tessera) *(coming soon)*
 
-From Python:
+From Python (`pip install gradio_client`):
 
 ```python
-from gradio_client import Client
+import time
+from gradio_client import Client, handle_file
 
-client = Client("JW-Sidhom-Lab/tessera")
-result = client.predict(
-    maf_file="path/to/sample.maf",
-    seg_file="path/to/sample_segments.tsv",
-    api_name="/predict",
+client = Client("JW-Sidhom-Lab/tessera")        # the public Spaces URL also works
+
+# Submit returns (status_html, job_id) immediately; inference runs async
+_, job_id = client.predict(
+    handle_file("snv.csv"),         # SNV CSV; or None
+    handle_file("cna.csv"),         # CNA CSV; or None. At least one required.
+    True,                           # apply TCGA quantile normalization to CNA
+    "you@example.com",              # email address for the download link
+    "GRCh37",                       # genome assembly: "GRCh37" or "GRCh38"
+    api_name="/submit",
 )
-# result includes per-variant embeddings, pathogenicity scores,
-# per-segment predictions, and a sample-level joint embedding.
+
+# Poll for completion (the same URL also gets emailed when the job finishes)
+while True:
+    status = client.predict(job_id, api_name="/status")
+    if status["status"] in ("done", "failed"):
+        break
+    time.sleep(10)
+
+print(status["url"])    # 24h pre-signed S3 download URL with the result ZIP
 ```
 
-The API serves the foundation-model outputs only (embeddings + per-variant / per-segment predictions). Downstream task heads (tumour-type classifier, treatment-effect score) are available on request under a Data Use Agreement.
+The API serves the foundation-model outputs only (per-token embeddings + per-token reconstruction predictions, returned as `.npy` files inside the result ZIP). Downstream task heads (tumour-type classifier, treatment-effect score) are available on request under a Data Use Agreement.
+
+CSV column conventions:
+
+- **SNV**: `Tumor_Sample_Barcode`, `Chromosome` (no `chr` prefix), `Start_Position`, `Reference_Allele`, `Tumor_Seq_Allele2`, plus either `vaf` or both `t_alt_count` + `t_ref_count`. Single-base substitutions only.
+- **CNA**: `Tumor_Sample_Barcode`, `Chromosome`, `Start`, `End`, `Segment_Mean` (log2 ratio); optional `LOH` column triggers the with-LoH model variant.
 
 ## Local installation
 
@@ -119,7 +137,7 @@ A BibTeX entry will be added on acceptance.
 
 ## License
 
-This repository is currently distributed under the **Apache License 2.0** (see [`LICENSE`](LICENSE)). License terms are subject to confirmation by Cornell's Center for Technology Licensing in light of pending patent applications covering specific clinical applications. Pretrained weights for downstream task heads (CRC and PDAC treatment-effect models) are available on request under a Data Use Agreement.
+This repository is distributed under the **PolyForm Noncommercial License 1.0.0** (see [`LICENSE`](LICENSE)). Use is permitted for academic research, education, public-research-organization use, and personal experimentation; commercial use is not permitted without a separate license. Pretrained foundation-model weights are released on the Hugging Face Hub under **CC-BY-NC-4.0** (non-commercial, attribution required). Pretrained weights for downstream clinical task heads (CRC and PDAC treatment-effect models) remain available on request under a Data Use Agreement. Patents covering clinical applications of TESSERA are assigned to NewYork-Presbyterian; commercial licensing inquiries should be directed to NYP's technology transfer office.
 
 ## Lab
 
