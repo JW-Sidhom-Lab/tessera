@@ -105,7 +105,6 @@ data/**/*.xls
 # scripts/ analyses read.
 !data/prognostic/glioma/Matrix_WHO2021.csv
 !data/prognostic/glioma/glioma_clinical_metadata.csv
-!data/prognostic/brca/brca_subtype.tsv
 !data/prognostic/brca/DLRS_tcga_brca_complete.csv
 !data/prognostic/brca/brca_clinical_metadata.csv
 !data/prognostic/prad/curatedPCaData_tcga_scores_20230215.Rds

@@ -1,15 +1,12 @@
 """Build ``brca_clinical_metadata.csv`` for the TESSERA BRCA cohort.
 
-Joins three sources into a single per-patient table:
+Joins two sources into a single per-patient table:
 
-1. **PAM50 intrinsic subtype** (``Subtype`` column) from the TCGA 2012
-   Cell breast paper (TCGA Network 2012, *Nature* 490, 61-70). Source
-   table: ``brca_subtype.tsv``.
+1. **Liu 2018 curated TCGA Pan-Cancer Atlas survival endpoints** -- DSS,
+   DFI, PFI from ``../../TCGA_PanCan/clinical.csv``, restricted to the
+   BRCA subset.
 
-2. **Liu 2018 curated TCGA Pan-Cancer Atlas survival endpoints** -- DSS,
-   DFI, PFI from ``../../TCGA_PanCan/clinical.csv``.
-
-3. **Research-reconstructed OncotypeDX Recurrence Score and MammaPrint
+2. **Research-reconstructed OncotypeDX Recurrence Score and MammaPrint
    risk score** from the DLRS (Deep Learning for Recurrence Score)
    release that accompanies Howard et al. 2023 (*npj Breast Cancer*).
    DLRS computed Oncotype RS via the Paik 2004 21-gene formula on
@@ -25,8 +22,6 @@ OncotypeDX comparator).
 
 Inputs
 ------
-``brca_subtype.tsv`` (this directory)
-    PAM50 calls from TCGA 2012 (column ``PAM50Call_RNAseq``).
 ``DLRS_tcga_brca_complete.csv`` (this directory)
     DLRS Oncotype / MammaPrint reconstruction from Howard et al. 2023.
 ``../../TCGA_PanCan/clinical.csv``
@@ -42,17 +37,10 @@ The curated ``DSS_cr`` / ``DFI.cr`` / ``PFI.cr`` columns use a tri-state
 encoding: ``0`` = censored, ``1`` = event, ``2`` = ambiguous cause-of-
 death (uncodable). This build remaps ``2 -> 0`` before writing so the
 output event columns stay strictly binary, matching the convention
-``cph.fit`` and ``KaplanMeierFitter.fit`` expect (and the convention
-already used by the Figure 4 concordance pipeline). The remap is
-conservative (uncodable -> not an event), so the event set going into
-Cox / KM is identical to what raw ``DSS`` / ``DFI`` / ``PFI`` from
-``ncit.csv`` would have produced.
+``cph.fit`` and ``KaplanMeierFitter.fit`` expect.
 
 Citations
 ---------
-TCGA Network. (2012). Comprehensive molecular portraits of human breast
-tumours. *Nature* 490, 61-70.
-
 Howard, F. M. et al. (2023). Multimodal prediction of breast cancer
 recurrence assays and risk of recurrence. *npj Breast Cancer*. DLRS
 release: github.com/fmhoward/DLRS.
@@ -69,7 +57,6 @@ from pathlib import Path
 import pandas as pd
 
 HERE = Path(__file__).parent.resolve()
-PAM50_TSV = Path(os.environ.get("PAM50_TSV", HERE / "brca_subtype.tsv"))
 DLRS_CSV = Path(os.environ.get("DLRS_CSV", HERE / "DLRS_tcga_brca_complete.csv"))
 CLINICAL_CSV = Path(os.environ.get(
     "CLINICAL_CSV", HERE / ".." / ".." / "TCGA_PanCan" / "clinical.csv"))
@@ -92,21 +79,9 @@ DLRS_COLUMN_RENAMES = {
 }
 
 # ---------------------------------------------------------------------------
-# 1. PAM50 intrinsic subtype (one row per patient).
+# 1. TCGA Pan-Cancer curated survival endpoints (BRCA subset).
 # ---------------------------------------------------------------------------
-print(f"Loading PAM50 subtypes: {PAM50_TSV}")
-pam50 = pd.read_csv(PAM50_TSV, sep="\t").dropna(subset=["PAM50Call_RNAseq"])
-pam50["Patient_ID"] = pam50["sample"].astype(str).str[:PATIENT_BARCODE_LEN]
-pam50 = (pam50[["Patient_ID", "PAM50Call_RNAseq"]]
-         .rename(columns={"PAM50Call_RNAseq": "Subtype"})
-         .drop_duplicates(subset=["Patient_ID"], keep="first"))
-print(f"  {len(pam50):,} unique patients")
-print(pam50["Subtype"].value_counts(dropna=False).rename_axis("Subtype").to_string())
-
-# ---------------------------------------------------------------------------
-# 2. TCGA Pan-Cancer curated survival endpoints (BRCA subset).
-# ---------------------------------------------------------------------------
-print(f"\nLoading TCGA Pan-Cancer curated clinical: {CLINICAL_CSV}")
+print(f"Loading TCGA Pan-Cancer curated clinical: {CLINICAL_CSV}")
 clin = pd.read_csv(CLINICAL_CSV)
 clin.columns = [c.lstrip("﻿") for c in clin.columns]
 clin = clin[clin["type"] == "BRCA"].copy()
@@ -126,7 +101,7 @@ clin = clin.rename(columns=rename_map)
 print(f"  {len(clin):,} BRCA patient survival rows")
 
 # ---------------------------------------------------------------------------
-# 3. DLRS OncotypeDX + MammaPrint per-patient values.
+# 2. DLRS OncotypeDX + MammaPrint per-patient values.
 # ---------------------------------------------------------------------------
 print(f"\nLoading DLRS Oncotype/MammaPrint: {DLRS_CSV}")
 dlrs = pd.read_csv(DLRS_CSV).drop_duplicates("patient", keep="first")
@@ -138,19 +113,19 @@ print(f"  {len(dlrs):,} unique DLRS patients")
 print(dlrs["Subtype_Oncotype"].value_counts().rename_axis("Subtype_Oncotype").to_string())
 
 # ---------------------------------------------------------------------------
-# 4. PAM50 + survival inner-join, then DLRS left-join (DLRS is partial).
+# 3. Survival left-joined with DLRS (DLRS is partial; no PAM50 filter --
+#    the manuscript Figure 5 BRCA analyses use OncotypeDX, not PAM50).
 #    Event/time pairs interleaved to match the legacy schema.
 # ---------------------------------------------------------------------------
-out = pam50.merge(clin, on="Patient_ID", how="inner") \
-           .merge(dlrs, on="Patient_ID", how="left")
-front = ["Patient_ID", "Subtype"]
+out = clin.merge(dlrs, on="Patient_ID", how="left")
+front = ["Patient_ID"]
 for _, _, leg_evt, leg_t in ENDPOINT_RENAMES:
     front += [leg_evt, leg_t]
 trail = [c for c in out.columns if c not in front]
 out = out[front + trail]
 
 n_dlrs_cov = out["oncotype_rs_dlrs"].notna().sum()
-print(f"\nMerged: {len(out):,} BRCA patients with PAM50 + curated survival; "
+print(f"\nMerged: {len(out):,} BRCA patients with curated survival; "
       f"{n_dlrs_cov:,} also carry DLRS Oncotype RS")
 
 out.to_csv(OUTPUT_CSV, index=False)
