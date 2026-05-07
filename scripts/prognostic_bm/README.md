@@ -40,12 +40,9 @@ analysis_results_<cohort>_infonce_per_sample_loss/
    ├── data/sample_assignments.csv
    └── plots/...                      ← per-cohort survival panels
                        │
-       ┌───────────────┴───────────────┐
-       ▼                               ▼
-joint_cox.py                  independent_cox.py
-(continuous z-scored          (categorical-tertile composite
- joint Cox: TESSERA            risk score vs TESSERA score;
- vs comparator)                forest + within-tertile KM)
+                       ▼
+              joint_cox.py
+              (continuous z-scored joint Cox: TESSERA vs comparator)
 ```
 
 ## Reproducibility
@@ -78,10 +75,6 @@ COHORT=prad   ./run_cohort.sh
 # After all three cohorts have run, compute the manuscript continuous
 # joint Cox numbers (BRCA Figure 5 c-j and PRAD Figure 5 k-r).
 python joint_cox.py
-
-# Optional: tertile-based composite-vs-foundation joint Cox (used for
-# the within-stratum sensitivity panels of Figure 5).
-python independent_cox.py
 ```
 
 ## Recognised env vars
@@ -98,7 +91,6 @@ python independent_cox.py
 | `analysis_results_<cohort>_infonce_per_sample_loss/data/fig5_cache.csv` | Per-sample UMAP coords, Risk_Score, Risk_Group, Subtype, survival. Consumed by `manuscript/build/figure5.py`. |
 | `analysis_results_<cohort>_infonce_per_sample_loss/plots/` | Per-cohort UMAP overlays + KM panels. |
 | `analysis_results_brca_infonce_per_sample_loss/joint_cox_continuous_brca_prad.txt` | The manuscript Figure 5 c-j and Figure 5 k-r joint-Cox numbers (HR per +1 SD, 95% CI, P, joint C, Spearman ρ). |
-| `independent_cox_results/<cohort>_independent_cox.{csv,png,pdf}` | Tertile-based composite-vs-foundation joint-Cox forest + within-tertile median-split KM. |
 
 All output directories are gitignored.
 
