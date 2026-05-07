@@ -155,7 +155,3 @@ cohort on a single workstation).
   (arm, event) label and deterministic.
 - The PMD optimisation (Witten 2009) is iterative; the
   `core.decomposition.pmd` wrapper uses a fixed initialisation.
-- Anti-EGFR co-administration imbalance: the manuscript treats
-  biomarker classification as independent of arm assignment per
-  Neugut 2019 (selection by toxicity); the supporting sensitivity
-  analyses are not shipped here.
