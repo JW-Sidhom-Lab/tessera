@@ -11,7 +11,7 @@
 
 TESSERA is a self-supervised foundation model jointly pretrained on somatic single-nucleotide variants (SNVs) and copy-number alterations (CNAs) from the TCGA Pan-Cancer Atlas. A single learned representation, produced once and reused without retraining, supports variant pathogenicity prediction, pan-cancer tumour-type classification, unsupervised molecular subtyping, prognostic stratification, and counterfactual treatment-effect estimation.
 
-This repository contains the reference implementation, pretrained weights pointer, and inference utilities described in the accompanying paper.
+This repository contains the reference implementation, the pretrained-weights pointer, the inference utilities described in the accompanying paper, and the end-to-end analysis pipelines that reproduce every panel of Figures 1-6 and Supplementary Figures 1-12.
 
 ## Quick start
 
@@ -62,19 +62,45 @@ weights_dir = snapshot_download(repo_id="JW-Sidhom-Lab/tessera-foundation")
 model = TESSERA(name="tessera_v1", model_dir=weights_dir)
 ```
 
+## Reproducing the manuscript
+
+Every published panel is backed by a script in this repository. The
+pipeline runs in three stages:
+
+1. **Data preparation** ([`data/`](data/README.md)): per-cohort
+   download instructions, source-table provenance, and the
+   `create_training_data*.py` / `build_<cohort>_metadata.py` builders
+   that turn raw releases into the analysis-ready CSVs.
+2. **Foundation-model pretraining**
+   ([`scripts/tcga_pancan_*/`](scripts/README.md)): trains the SNV
+   models, the CNA models, and the joint SNV+CNA InfoNCE-aligned
+   foundation model on the TCGA Pan-Cancer Atlas.
+3. **Downstream analyses** ([`scripts/`](scripts/README.md)):
+   variant-pathogenicity (Fig. 1 h-o), cross-platform validation
+   (Fig. 1 f-g, Fig. 2 d), tumour-type classification (Fig. 3,
+   Fig. 4 b-e), prognostic UMAP + joint Cox (Fig. 5), doubly-robust
+   counterfactual treatment-effect (Fig. 6 a-m), and DepMap
+   cell-line transfer (Fig. 6 n).
+
+[`scripts/README.md`](scripts/README.md) and
+[`data/README.md`](data/README.md) hold the full per-directory tables
+mapping each script and cohort to its manuscript figure.
+
 ## Repository layout
 
 ```
 tessera/
-├── tessera/                        # the package
-│   ├── base.py                     # BaseModel — shared data + training infrastructure
+├── tessera/                        # foundation-model package
+│   ├── base.py                     # BaseModel: shared data + training infrastructure
 │   ├── input_keys.py               # input-key helpers
-│   ├── model.py                    # TESSERA — current foundation-model class
+│   ├── model.py                    # TESSERA: foundation-model class
 │   ├── data/
 │   │   └── preprocessing.py        # SNV/CNA tokenization, FASTA lookup, sample bagging
 │   ├── layers/                     # custom Keras layers (attention, masking, MIL, ...)
 │   ├── training/                   # training utilities (callbacks, losses, schedules)
 │   └── ref_genomes/                # reference-genome download script + indices
+├── data/                           # per-cohort data preparation pipelines (data/README.md)
+├── scripts/                        # analysis pipelines backing the manuscript figures (scripts/README.md)
 └── README.md
 ```
 
