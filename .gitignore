@@ -109,7 +109,6 @@ data/**/*.xls
 !data/prognostic/brca/DLRS_tcga_brca_complete.csv
 !data/prognostic/brca/brca_clinical_metadata.csv
 !data/prognostic/prad/curatedPCaData_tcga_scores_20230215.Rds
-!data/prognostic/prad/decipher_22_genes.csv
 !data/prognostic/prad/prad_clinical_metadata.csv
 
 # Large model-ready train/valid CSVs from the second-stage data prep under

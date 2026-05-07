@@ -1,6 +1,6 @@
 """Build ``prad_clinical_metadata.csv`` for the TESSERA PRAD cohort.
 
-Joins three sources into a single per-patient table:
+Joins two sources into a single per-patient table:
 
 1. **TCGA Pan-Cancer Atlas curated survival** (Liu et al., 2018,
    ``DSS_cr``, ``PFI``, ``DFI.cr``, etc.) for the PRAD subset of
@@ -13,13 +13,12 @@ Joins three sources into a single per-patient table:
    single uniform pipeline on TCGA-PRAD RNA-seq. Source:
    ``curatedPCaData_tcga_scores_20230215.Rds``. Requires ``pyreadr``.
 
-3. **Tertile binning** of each published score within the PRAD cohort
-   into Low / Intermediate / High strata, in parallel to the BRCA
-   pipeline. We use the curatedPCaData published Decipher score as the
-   headline transcriptomic comparator (``Subtype`` column); the
-   Veracyte clinical thresholds (<0.45 / 0.45-0.6 / >0.6) are
-   calibrated to the proprietary score's distribution and do not
-   transfer.
+Each of the four scores is tertile-binned within the PRAD cohort into
+Low / Intermediate / High strata, in parallel to the BRCA pipeline. We
+use the curatedPCaData published Decipher score as the headline
+transcriptomic comparator (``Subtype`` column); the Veracyte clinical
+thresholds (<0.45 / 0.45-0.6 / >0.6) are calibrated to the proprietary
+score's distribution and do not transfer.
 
 The output is the TCGA-side ground truth used by Figure 5 k-r of the
 manuscript (UMAP overlay + joint Cox of the TESSERA score against the
@@ -29,29 +28,12 @@ Inputs
 ------
 ``curatedPCaData_tcga_scores_20230215.Rds`` (this directory)
     EH8024 release, 2023-02-15.
-``decipher_22_genes.csv`` (this directory, reference catalog only)
-    The Decipher 22-gene panel (Erho 2013, Karnes 2013). Tracked for
-    completeness; consumed only by the optional in-house surrogate
-    described below.
 ``../../TCGA_PanCan/clinical.csv``
     TCGA Pan-Cancer Atlas curated clinical resource (Liu 2018).
 
 Output
 ------
 ``prad_clinical_metadata.csv`` (this directory)
-
-Optional: in-house 18-of-22-gene Decipher surrogate
----------------------------------------------------
-The original development pipeline also computed an in-house mean-z-score
-Decipher surrogate from the EBPlusPlus pan-cancer RNA-seq matrix (the
-4 of 22 lncRNAs are absent from EBPlusPlus, so 18 genes are used).
-That extra column (``decipher_score_recon``) is a sensitivity comparator
-only -- the headline ``Subtype`` and ``decipher_curatedpcadata`` always
-come from the published curatedPCaData release. It is gated behind
-``INCLUDE_RECON_SURROGATE=1`` and requires
-``data/TCGA_PanCan/EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv``
-on disk (~4 GB; not shipped). Off by default; the manuscript uses only
-the published score.
 
 Citations
 ---------
@@ -75,7 +57,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pyreadr
 
@@ -84,22 +65,6 @@ SCORES_RDS = Path(os.environ.get("SCORES_RDS", HERE / "curatedPCaData_tcga_score
 CLINICAL_CSV = Path(os.environ.get(
     "CLINICAL_CSV", HERE / ".." / ".." / "TCGA_PanCan" / "clinical.csv"))
 OUTPUT_CSV = Path(os.environ.get("OUTPUT_CSV", HERE / "prad_clinical_metadata.csv"))
-
-INCLUDE_RECON_SURROGATE = os.environ.get("INCLUDE_RECON_SURROGATE", "0") != "0"
-RNA_PATH = Path(os.environ.get(
-    "RNA_PATH",
-    HERE / ".." / ".." / "TCGA_PanCan"
-         / "EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv"))
-
-# Decipher 22-gene panel (Erho 2013, Karnes 2013). 18 of 22 genes are
-# present in EBPlusPlus annotation; 4 lncRNAs are dropped. This is only
-# used for the optional in-house surrogate column.
-DECIPHER_22 = (
-    "LASP1", "IQGAP3", "NFIB", "S1PR4", "THBS2", "ANO7", "PCDH7",
-    "MYBPC1", "EPPK1", "TSBP1", "PBX1", "NUSAP1", "ZWILCH", "UBE2C",
-    "CAMK2N1", "RABGAP1", "PCAT32", "GHSR", "PCAT80", "TNFRSF19",
-    "RAB3B", "TEX22",
-)
 
 PATIENT_BARCODE_LEN = 12
 
@@ -114,39 +79,6 @@ SCORE_TO_SUBTYPE = (
 
 def _patient_id_dotted(aliquot: str) -> str:
     return "-".join(aliquot.split(".")[:3])
-
-
-def _patient_id_dashed(aliquot: str) -> str:
-    return "-".join(aliquot.split("-")[:3])
-
-
-def _compute_decipher_recon_surrogate(prad_pat_ids: set) -> pd.DataFrame:
-    """Compute the in-house 18-of-22-gene mean-z-score Decipher surrogate.
-
-    Returns a DataFrame with ``Patient_ID`` and ``decipher_score_recon``
-    for primary-tumor aliquots (sample-type code 01).
-    """
-    print(f"  Loading EBPlusPlus RNA matrix: {RNA_PATH}")
-    rna = pd.read_csv(RNA_PATH, sep="\t")
-    rna.columns = [c.strip('"') for c in rna.columns]
-    rna["gene_id"] = rna["gene_id"].str.strip('"')
-    rna["symbol"] = rna["gene_id"].str.split("|").str[0]
-    decipher_rows = rna[rna["symbol"].str.upper().isin(
-        [g.upper() for g in DECIPHER_22])].copy()
-
-    aliquot_cols = [c for c in rna.columns if c.startswith("TCGA-")]
-    prad_aliquots = [c for c in aliquot_cols
-                     if _patient_id_dashed(c) in prad_pat_ids
-                     and c.split("-")[3][:2] == "01"]
-
-    sub = decipher_rows[["symbol"] + prad_aliquots]
-    long = sub.melt(id_vars="symbol", var_name="aliquot", value_name="expr")
-    long["Patient_ID"] = long["aliquot"].apply(_patient_id_dashed)
-    pat_expr = (long.groupby(["Patient_ID", "symbol"])["expr"]
-                    .mean().unstack("symbol"))
-    expr_log = np.log2(pat_expr.fillna(0) + 1)
-    expr_z = (expr_log - expr_log.mean(axis=0)) / expr_log.std(axis=0).replace(0, np.nan)
-    return expr_z.mean(axis=1).rename("decipher_score_recon").reset_index()
 
 
 # ---------------------------------------------------------------------------
@@ -199,39 +131,19 @@ pat_scores = pat_scores.rename(columns={
 })
 
 # ---------------------------------------------------------------------------
-# 4. Optional in-house 18-of-22-gene Decipher surrogate.
-# ---------------------------------------------------------------------------
-recon_series = None
-if INCLUDE_RECON_SURROGATE and RNA_PATH.exists():
-    print(f"\nComputing optional in-house Decipher surrogate "
-          f"(INCLUDE_RECON_SURROGATE=1, EBPlusPlus RNA matrix on disk)")
-    recon_series = _compute_decipher_recon_surrogate(set(clin["Patient_ID"]))
-    print(f"  Surrogate computed for {len(recon_series):,} primary-tumor patients")
-elif INCLUDE_RECON_SURROGATE:
-    print(f"\nINCLUDE_RECON_SURROGATE=1 but {RNA_PATH} not on disk; skipping.")
-
-# ---------------------------------------------------------------------------
-# 5. Merge and write output.
+# 4. Merge and write output.
 # ---------------------------------------------------------------------------
 out = clin.merge(pat_scores, on="Patient_ID", how="left")
-if recon_series is not None:
-    out = out.merge(recon_series, on="Patient_ID", how="left")
-
-out["decipher_n_genes_recon"] = 18 if recon_series is not None else np.nan
-out["decipher_n_genes_panel"] = 22
 out["curatedpcadata_resource"] = "EH8024 / tcga_scores_20230215.Rds"
 
 # Order columns: identifiers, headline Subtype, per-classifier categoricals,
-# raw scores, optional reconstruction, original clinical columns, provenance.
+# raw scores, original clinical columns, provenance.
 front = ["Patient_ID", "Subtype",
          "Subtype_Decipher", "Subtype_Oncotype",
          "Subtype_Prolaris", "Subtype_AR",
          "decipher_curatedpcadata", "oncotype_curatedpcadata",
          "prolaris_curatedpcadata", "ar_score_curatedpcadata"]
-if recon_series is not None:
-    front.append("decipher_score_recon")
-provenance = ["decipher_n_genes_recon", "decipher_n_genes_panel",
-              "curatedpcadata_resource"]
+provenance = ["curatedpcadata_resource"]
 other_clin = [c for c in out.columns
               if c not in front + provenance + ["type"]]
 out = out[front + other_clin + provenance]

@@ -11,7 +11,6 @@ TESSERA risk score against the Decipher comparator.
 | File | Source | Citation |
 |---|---|---|
 | `curatedPCaData_tcga_scores_20230215.Rds` | Bioconductor ExperimentHub `EH8024` | Laajala, T. D. *et al.* A harmonized resource of integrated prostate cancer clinical, -omic, and signature features. *Scientific Data* **10**, 430 (2023). |
-| `decipher_22_genes.csv` | Reference gene list | Erho, N. *et al.* PLoS One 2013; Karnes, R. J. *et al.* J Urol 2013. |
 | `../../TCGA_PanCan/clinical.csv` | TCGA Pan-Cancer Atlas curated clinical resource | Liu, J. *et al.* *Cell* **173**, 400-416.e11 (2018). |
 
 `curatedPCaData_tcga_scores_20230215.Rds` was downloaded from
@@ -28,14 +27,8 @@ processing pipeline:
 | `prolaris` | Cuzick CCP cell-cycle-progression score (Cuzick 2011). |
 | `ar_score` | 20-gene AR-signaling activity (Hieronymus 2006). |
 
-`decipher_22_genes.csv` is the full 22-gene Decipher panel as a
-reference catalog. It is **only** consumed by the optional in-house
-reconstruction (see below); the headline manuscript columns use the
-published curatedPCaData score directly.
-
-`clinical.csv` is the standard TCGA Pan-Cancer Atlas curated clinical
-resource (Liu 2018-style, with `_cr` suffixed survival columns),
-gitignored as a raw upstream input under
+`clinical.csv` is the Liu 2018 curated TCGA Pan-Cancer Atlas clinical
+resource, gitignored as a raw upstream input under
 [`data/TCGA_PanCan/`](../../TCGA_PanCan/README.md). For PRAD we pull
 all available endpoints (`PFI`, `PFI.1`, `PFI.2`, `PFS`, `DSS_cr`,
 `DFI.cr`, `PFI.cr`); per Liu 2018 the recommended primary endpoint for
@@ -74,27 +67,6 @@ python build_prad_metadata.py     # requires `pyreadr`
 Override paths via the `SCORES_RDS`, `CLINICAL_CSV`, and `OUTPUT_CSV`
 environment variables.
 
-### Optional: in-house 18-of-22-gene Decipher surrogate
-
-The original development pipeline also computed an in-house mean-z-score
-Decipher surrogate from the EBPlusPlus pan-cancer RNA-seq matrix (4 of
-22 lncRNAs are absent from EBPlusPlus, so 18 genes are used). That
-column (`decipher_score_recon`) is a **sensitivity comparator only**;
-the manuscript's headline `Subtype` and `decipher_curatedpcadata` come
-from the published curatedPCaData score, not from this surrogate.
-
-The surrogate is gated behind `INCLUDE_RECON_SURROGATE=1` and requires
-`data/TCGA_PanCan/EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv`
-on disk (~4 GB; not shipped). Off by default. Comparison from the
-original methods note: the 18-gene surrogate achieved C=0.561 (95% CI
-0.472-0.641) on TCGA-PRAD 5-year PFI, vs C=0.631 (95% CI 0.545-0.712)
-for the published 22-gene curatedPCaData Decipher score. The two are
-correlated at rho=0.26 (P=1e-7) -- partial overlap, not equivalent.
-
-```bash
-INCLUDE_RECON_SURROGATE=1 python build_prad_metadata.py
-```
-
 ## Output
 
 `prad_clinical_metadata.csv` -- one row per PRAD patient (n=500),
@@ -106,10 +78,7 @@ columns:
 | `Subtype` | Within-cohort Decipher tertile (Low / Intermediate / High); same as `Subtype_Decipher`. |
 | `Subtype_Decipher`, `Subtype_Oncotype`, `Subtype_Prolaris`, `Subtype_AR` | Within-cohort tertiles of each published curatedPCaData score. |
 | `decipher_curatedpcadata`, `oncotype_curatedpcadata`, `prolaris_curatedpcadata`, `ar_score_curatedpcadata` | Continuous published scores. |
-| `decipher_score_recon` | (optional) In-house 18-gene surrogate; populated only when `INCLUDE_RECON_SURROGATE=1`. |
 | Liu 2018 endpoints | `PFI`, `PFI.time`, `PFI.1`, `PFI.time.1`, `PFI.2`, `PFI.time.2`, `PFS`, `PFS.time`, `DSS_cr`, `DSS.time.cr`, `DFI.cr`, `DFI.time.cr`, `PFI.cr`, `PFI.time.cr`, `PFI.1.cr`, `PFI.time.1.cr`, `PFI.2.cr`, `PFI.time.2.cr`. |
-| `decipher_n_genes_recon` | 18 when surrogate is on, NaN otherwise. |
-| `decipher_n_genes_panel` | 22 (the published Decipher panel size). |
 | `curatedpcadata_resource` | Provenance string `EH8024 / tcga_scores_20230215.Rds`. |
 
 ## Caveats
