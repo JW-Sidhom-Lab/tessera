@@ -10,8 +10,8 @@ comparator).
 
 | File | Source |
 |---|---|
-| `DLRS_tcga_brca_complete.csv` | Howard et al. 2023, *npj Breast Cancer*. DLRS GitHub: `github.com/fmhoward/DLRS`. RNA-seq reconstructions of OncotypeDX RS (Paik 2004 21-gene formula) and MammaPrint. |
-| `../../TCGA_PanCan/clinical.csv` | Liu et al. 2018, *Cell* **173**, 400-416.e11. Curated DSS / DFI / PFI endpoints. |
+| `DLRS_tcga_brca_complete.csv` | [Howard et al. 2023, *npj Breast Cancer* **9**, 25](https://doi.org/10.1038/s41523-023-00530-5). RNA-seq reconstructions of OncotypeDX RS (Paik 2004 21-gene formula) and MammaPrint. Downloaded from [`PROJECTS/UCH_RS/tcga_brca_complete.csv`](https://github.com/fmhoward/DLRS/blob/main/PROJECTS/UCH_RS/tcga_brca_complete.csv) of the [`fmhoward/DLRS`](https://github.com/fmhoward/DLRS) repository (renamed locally to make the source unambiguous). |
+| `../../TCGA_PanCan/clinical.csv` | [Liu et al. 2018, *Cell* **173**, 400-416.e11](https://doi.org/10.1016/j.cell.2018.02.052). Curated DSS / DFI / PFI endpoints from the TCGA Pan-Cancer Clinical Data Resource. |
 
 ## Processing
 

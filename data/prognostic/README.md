@@ -8,9 +8,9 @@ comparators). One subdirectory per cohort, each self-contained:
 
 | Cohort | Comparator | Manuscript figures | README |
 |---|---|---|---|
-| `glioma/` | WHO 2021 primary class (Leiria 2025) | Figure 4 g-h, Figure 5 a | [README](glioma/README.md) |
-| `brca/`   | DLRS-reconstructed OncotypeDX RS (Howard 2023) | Figure 5 c-j | [README](brca/README.md) |
-| `prad/`   | curatedPCaData Decipher score (Laajala 2023) | Figure 5 k-r | [README](prad/README.md) |
+| `glioma/` | WHO 2021 primary class ([Leiria 2025](https://doi.org/10.1038/s41597-025-05117-2)) | Figure 4 g-h, Figure 5 a | [README](glioma/README.md) |
+| `brca/`   | DLRS-reconstructed OncotypeDX RS ([Howard 2023](https://doi.org/10.1038/s41523-023-00530-5)) | Figure 5 c-j | [README](brca/README.md) |
+| `prad/`   | curatedPCaData Decipher score ([Laajala 2023](https://doi.org/10.1038/s41597-023-02335-4)) | Figure 5 k-r | [README](prad/README.md) |
 
 Each subdirectory ships:
 
