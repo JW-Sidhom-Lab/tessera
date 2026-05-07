@@ -45,12 +45,17 @@ For users who want to run inference offline, integrate TESSERA into a custom pip
 git clone https://github.com/JW-Sidhom-Lab/tessera.git
 cd tessera
 
-# Install
-pip install -e .
+# Recommended: a virtual environment so deps don't clash with system Python
+python3 -m venv .venv && source .venv/bin/activate
+
+# Install all dependencies
+pip install -r requirements.txt
 
 # Download reference genome (default: GRCh37)
 bash tessera/ref_genomes/download_ref_genomes.sh
 ```
+
+`requirements.txt` covers the foundation-model package, all manuscript-reproduction scripts (pretraining, classifiers, prognostic / predictive-biomarker analyses), and the Gradio inference API. A trimmer subset for deploying only the inference API is at [`inference_api/requirements.txt`](inference_api/requirements.txt).
 
 Weights are hosted on Hugging Face Hub at [huggingface.co/JW-Sidhom-Lab/tessera-foundation](https://huggingface.co/JW-Sidhom-Lab/tessera-foundation) *(coming soon)*. Loading from Python:
 

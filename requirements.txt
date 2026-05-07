@@ -1,0 +1,64 @@
+# TESSERA: Python dependencies for the foundation model + all manuscript-
+# reproduction scripts.
+#
+# Install everything:
+#     pip install -r requirements.txt
+#
+# A leaner subset for deploying just the inference API to Hugging Face Spaces
+# is at inference_api/requirements.txt.
+#
+# Version floors are set conservatively to match what the manuscript was run
+# with. Newer minor versions of each dependency should also work.
+
+# ---------------------------------------------------------------------------
+# Core: TESSERA foundation-model package (tessera/) and all inference scripts
+# ---------------------------------------------------------------------------
+tensorflow>=2.16
+keras>=3.0
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3
+pyfaidx>=0.7
+tqdm>=4.66
+
+# ---------------------------------------------------------------------------
+# Plotting (manuscript figure scripts under scripts/*)
+# ---------------------------------------------------------------------------
+matplotlib>=3.7
+seaborn>=0.13
+distinctipy>=1.3
+
+# ---------------------------------------------------------------------------
+# Survival analysis: Fig 4 g-h, Fig 5 a-r, Fig 6 a-m + Sup Fig 10-12
+# ---------------------------------------------------------------------------
+lifelines>=0.29
+
+# ---------------------------------------------------------------------------
+# Dimensionality reduction: Fig 5 prognostic-biomarker UMAPs
+# ---------------------------------------------------------------------------
+umap-learn>=0.5
+
+# ---------------------------------------------------------------------------
+# Data preparation extras (only needed when regenerating cohort tables)
+# ---------------------------------------------------------------------------
+# Reads the curatedPCaData .Rds archive in
+# data/prognostic/prad/build_prad_metadata.py.
+pyreadr>=0.5
+# Reads the TCGA clinical xlsx (only if you regenerate it).
+openpyxl>=3.1
+
+# ---------------------------------------------------------------------------
+# Inference API deployment (inference_api/app.py): Gradio UI + S3 + SES.
+# Repeated here so a single `pip install -r requirements.txt` sets up
+# everything; the slimmer inference_api/requirements.txt is the same set
+# without the analysis-only deps, used by the Spaces container.
+# ---------------------------------------------------------------------------
+gradio>=6.0
+boto3>=1.34
+
+# ---------------------------------------------------------------------------
+# Hugging Face Hub: pulls the pretrained model weights at inference time
+# (the snippet shown in the project README).
+# ---------------------------------------------------------------------------
+huggingface_hub>=0.20
