@@ -5,17 +5,6 @@ MSK-CHORD first-line metastatic cohorts: CRC FOLFOX vs FOLFIRI and PDAC
 FOLFIRINOX vs gemcitabine plus nab-paclitaxel. Backs all panels of
 manuscript Figure 6 (a-n) and Supplementary Figures 10, 11, 12.
 
-## Cohorts and headline numbers
-
-| Cohort | Arm 1 (red) | Arm 0 (blue) | n (FOLFOX/FOLFIRI or FFX/GA) | Predicted-arm-1-favoured PFS HR | Predicted-arm-0-favoured PFS HR | Manuscript |
-|---|---|---|---|---|---|---|
-| CRC  | FOLFOX      | FOLFIRI                            | 1{,}204 / 248 | 0.68 (P = 5e-6) | 1.39 (P = 0.013)  | Fig 6 b-e, j-m |
-| PDAC | FOLFIRINOX  | gemcitabine + nab-paclitaxel       | 479 / 292     | 0.80 (P = 0.003) | 2.38 (P = 0.033) | Fig 6 f-i, Sup 12 |
-
-OS validation, anti-EGFR sensitivity, the SEER-Medicare reassignment
-projection, and feature-slice ablations are described in the manuscript
-and produced by the scripts below.
-
 ## Inputs
 
 | Path | Producer | Used by |
@@ -83,7 +72,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
 | [`crc_tp53_kras_simple_rule.py`](crc_tp53_kras_simple_rule.py) | TP53 / KRAS / 17p genotype subgroups; Fig 6 k-m. |
 | [`pdac_triplet_rule.py`](pdac_triplet_rule.py) | TP53 + 17p-intact + 20q+ triplet; Sup 12 c-e. |
 | [`crc_ablation.py`](crc_ablation.py), [`pdac_ablation.py`](pdac_ablation.py), [`_ablation_lib.py`](_ablation_lib.py) | Three-way Local / +Global / +InfoNCE feature-slice ablation; Sup 11. |
-| [`quantify_reassignment_benefit.py`](quantify_reassignment_benefit.py) | SEER-Medicare 1L stage IV CRC reassignment projection (37%, +0.9 / +6.9 / +2.4 / +8.4 mo). |
+| [`quantify_reassignment_benefit.py`](quantify_reassignment_benefit.py) | SEER-Medicare 1L stage IV CRC reassignment projection. |
 | [`build_figure6_panels.py`](build_figure6_panels.py) | Aggregates everything into the npz + meta.json bundle that `manuscript/build/figure6*.py` reads. |
 | [`get_latent_features.py`](get_latent_features.py) | Frozen TESSERA inference on MSK-CHORD; produces the 4.7 GB latents pkl. |
 | [`export_scalers.py`](export_scalers.py) | Saves the SNV / CNA RobustScaler state + feature ordering so the DepMap module can apply β_eff to external embeddings. |
