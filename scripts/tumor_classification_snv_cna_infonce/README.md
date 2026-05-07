@@ -78,7 +78,7 @@ The classifier reads:
   [`data/TCGA_PanCan/clinical.csv`](../../data/TCGA_PanCan/README.md)
   (used only by the concordance scripts)
 - WHO 2021 glioma reclassification labels from
-  `data/TCGA_PanCan/glioma_who2021_metadata.csv`
+  `data/prognostic/glioma/glioma_clinical_metadata.csv`
   (used only by `tcga_concordance_paper_figures.py`)
 
 so the upstream joint pretraining + feature extraction must have run

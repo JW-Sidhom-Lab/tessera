@@ -1,0 +1,23 @@
+gene_symbol,present_in_tcga_ebplusplus,used_in_recon_surrogate,note
+LASP1,True,True,
+IQGAP3,True,True,
+NFIB,True,True,
+S1PR4,True,True,
+THBS2,True,True,
+ANO7,True,True,
+PCDH7,True,True,
+MYBPC1,True,True,
+EPPK1,True,True,
+TSBP1,False,False,lncRNA / non-coding; not in EBPlusPlus annotation
+PBX1,True,True,
+NUSAP1,True,True,
+ZWILCH,True,True,
+UBE2C,True,True,
+CAMK2N1,True,True,
+RABGAP1,True,True,
+PCAT32,False,False,lncRNA / non-coding; not in EBPlusPlus annotation
+GHSR,True,True,
+PCAT80,False,False,lncRNA / non-coding; not in EBPlusPlus annotation
+TNFRSF19,True,True,
+RAB3B,True,True,
+TEX22,False,False,lncRNA / non-coding; not in EBPlusPlus annotation

@@ -71,7 +71,8 @@ CLINICAL_CSV = os.environ.get(
 )
 GLIOMA_META = os.environ.get(
     "GLIOMA_META",
-    os.path.join(HERE, "..", "..", "data", "TCGA_PanCan", "glioma_who2021_metadata.csv"),
+    os.path.join(HERE, "..", "..", "data", "prognostic", "glioma",
+                 "glioma_clinical_metadata.csv"),
 )
 OUT_ROOT = os.environ.get(
     "OUT_ROOT",
