@@ -61,6 +61,9 @@ scripts/*/models_old/
 scripts/*/multimodal_features/
 scripts/*/multimodal_loss/
 scripts/*/embeddings/
+# Local-only migration utility for loading the previous pkg.var_llm
+# .keras checkpoints; not part of the public API.
+tessera/_legacy.py
 scripts/*/features/
 scripts/*/predictions/
 scripts/*/results/

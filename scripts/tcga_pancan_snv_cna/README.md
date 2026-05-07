@@ -141,29 +141,6 @@ import line) to explore alternative configs.
 
 The two output dirs are gitignored.
 
-## Loading legacy checkpoints
-
-Checkpoints saved by the previous `pkg.var_llm.VariantLLM` training
-stack (anything trained before the `tessera/` package migration) bake
-the old import paths into their `config.json`. To load them with the
-new package, run the relocator once on the source directory:
-
-```bash
-python -m tessera._legacy /path/to/models_old /path/to/models
-```
-
-Each `.keras` archive is rewritten in place: `pkg.functions.*` becomes
-`tessera.*` and any unsupported `quantization_config: null` entries
-(emitted by newer Keras versions on RunPod, rejected by older Keras
-versions locally) are stripped. The relocated archives load under
-vanilla `keras.models.load_model` against this package, with no
-runtime shim required.
-
-If you'd prefer not to rewrite the file on disk (e.g., when inspecting
-an external archive), `tessera._legacy.install_legacy_aliases()`
-installs `sys.modules` aliases for the old paths instead, after which
-the original archive loads directly.
-
 ## Compute requirements
 
 Trained on an NVIDIA H100 (~24 hours wall-clock for the manuscript
