@@ -15,7 +15,7 @@ This repository contains the reference implementation, the pretrained-weights po
 
 ## Quick start
 
-The fastest way to use TESSERA is via the public inference API on Hugging Face — no local installation required. Upload SNV and/or CNA data, get back per-variant predictions and embeddings:
+The fastest way to use TESSERA is via the public inference API on Hugging Face; no local installation required. Upload SNV and/or CNA data, get back per-variant predictions and embeddings:
 
 🔗 **Inference API**: [huggingface.co/spaces/JW-Sidhom-Lab/tessera](https://huggingface.co/spaces/JW-Sidhom-Lab/tessera) *(coming soon)*
 
