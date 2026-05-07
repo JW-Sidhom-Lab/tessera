@@ -45,10 +45,25 @@ The single configuration in `model_config_infonce.py`:
   = True`), no additional cross-modal block stack
   (`cross_modal_blocks = 0`).
 - **Loss**: masked-token reconstruction on both modalities, plus
-  per-sample InfoNCE between the pooled SNV and CNA sample embeddings,
-  with InfoNCE weight 0.1 and a 2-layer 256-dim shared projection MLP.
-- **No LOH head** (`predict_cna_loh = False`), matching the NoLOH
-  cross-platform variant used for MSK-CHORD validation.
+  per-sample InfoNCE alignment between the pooled SNV and CNA sample
+  embeddings (InfoNCE weight 0.1, temperature 0.1).
+- **Projection heads** (one per modality): a 2-layer MLP with 256
+  units per layer (one GELU-activated hidden layer plus a linear
+  output), applied to the per-token backbone features prior to any
+  cross-modal interaction, then masked global average pooling to a
+  sample-level embedding (project-then-mean). Set by
+  `infonce_projection_n_layers = 2`, `infonce_projection_dim = 256`,
+  `infonce_shared_projection = True`.
+- **LOH head**: optional, set by `predict_cna_loh`. Both variants are
+  trained and reported in the manuscript: the LOH variant
+  (`predict_cna_loh = True`) carries an allele-specific copy-number
+  classification head trained jointly with Segment_Mean reconstruction,
+  and the NoLOH variant (`predict_cna_loh = False`) drops that head and
+  is the variant required for cross-platform validation on
+  panel-sequenced cohorts (e.g., MSK-CHORD) where allele-specific
+  copy-number calls are not available. Toggling this flag retrains the
+  other variant; the resulting `model_name` and on-disk directory are
+  suffixed automatically (`..._noLOH` when `predict_cna_loh = False`).
 
 ## Missing-modality handling
 
