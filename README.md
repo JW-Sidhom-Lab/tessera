@@ -56,20 +56,21 @@ CSV column conventions:
 
 ## Local installation
 
-For users who want to run inference offline, integrate TESSERA into a custom pipeline, or retrain on their own data:
+For users who want to run inference offline or integrate TESSERA into a custom pipeline:
 
 ```bash
-# Clone
+pip install tessera-foundation
+```
+
+The first call to `tessera.featurize` (below) downloads the reference genome (~3 GB) and the requested model weights from Hugging Face Hub on demand and caches both, so you don't need a separate setup step.
+
+To reproduce the manuscript or retrain from scratch, clone the repo for the analysis scripts and the FASTA bootstrap helper:
+
+```bash
 git clone https://github.com/JW-Sidhom-Lab/tessera.git
 cd tessera
-
-# Recommended: a virtual environment so deps don't clash with system Python
 python3 -m venv .venv && source .venv/bin/activate
-
-# Install all dependencies
 pip install -r requirements.txt
-
-# Download reference genome (default: GRCh37)
 bash tessera/ref_genomes/download_ref_genomes.sh
 ```
 

@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tessera-foundation"
+version = "0.1.1"
+description = "TESSERA: a foundation model for the cancer genome."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "John-William Sidhom", email = "johnwilliamsidhom@gmail.com" },
+]
+keywords = [
+    "cancer-genomics",
+    "foundation-model",
+    "self-supervised-learning",
+    "tcga",
+    "somatic-variants",
+    "copy-number-alterations",
+    "bioinformatics",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "tensorflow>=2.16",
+    "numpy",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "pyfaidx>=0.7",
+    "pyliftover>=0.4",
+    "tqdm>=4.66",
+    "huggingface_hub>=0.20",
+]
+
+[project.urls]
+Homepage      = "https://github.com/JW-Sidhom-Lab/tessera"
+Repository    = "https://github.com/JW-Sidhom-Lab/tessera"
+"Model weights" = "https://huggingface.co/JW-Sidhom-Lab/tessera-foundation"
+Issues        = "https://github.com/JW-Sidhom-Lab/tessera/issues"
+
+[tool.setuptools]
+packages = [
+    "tessera",
+    "tessera.data",
+    "tessera.layers",
+    "tessera.training",
+    "tessera.ref_genomes",
+]
+
+[tool.setuptools.package-data]
+"tessera.ref_genomes" = [
+    "GRCh37_chr_sizes.txt",
+    "GRCh38_chr_sizes.txt",
+    "download_ref_genomes.sh",
+]
+
+[tool.setuptools.exclude-package-data]
+"tessera.ref_genomes" = [
+    "*.fna",
+    "*.fna.fai",
+    "*.fna.gz",
+    ".DS_Store",
+]
