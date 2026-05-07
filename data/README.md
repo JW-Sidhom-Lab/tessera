@@ -22,15 +22,15 @@ commands, and expected outputs.
 Two pipeline shapes coexist:
 
 - **Variant / segment cohorts** (`TCGA_PanCan/`, `genie_18_0/`, `clinvar/`,
-  `msk_chord_2024/`, `DepMap/`) ship one or more `create_training_data*.py`
+  `msk_chord_2024/`, `DepMap/`) contain one or more `create_training_data*.py`
   scripts (or `prepare_data.py` + cohort builders for `msk_chord_2024/`).
   Raw inputs and derived CSVs are gitignored; the scripts accept CLI arg
   overrides (`--maf`, `--clinical`, `--output`, etc.), are import-safe (no
   module-level side effects), and emit per-stage row counts via Python
   `logging` at INFO level.
 - **Clinical-metadata cohorts** (`prognostic/glioma/`, `prognostic/brca/`,
-  `prognostic/prad/`) ship the small published source tables they consume,
-  a `build_<cohort>_metadata.py` builder, and the resulting
+  `prognostic/prad/`) include the small published source tables they
+  consume, a `build_<cohort>_metadata.py` builder, and the resulting
   `<cohort>_clinical_metadata.csv`. The builders run at module load and
   accept env-var overrides (`WHO2021_CSV`, `DLRS_CSV`, `SCORES_RDS`,
   `CLINICAL_CSV`, `OUTPUT_CSV`).

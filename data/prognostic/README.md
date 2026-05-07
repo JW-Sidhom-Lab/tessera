@@ -12,7 +12,7 @@ comparators). One subdirectory per cohort, each self-contained:
 | `brca/`   | DLRS-reconstructed OncotypeDX RS ([Howard 2023](https://doi.org/10.1038/s41523-023-00530-5)) | Figure 5 c-j | [README](brca/README.md) |
 | `prad/`   | curatedPCaData Decipher score ([Laajala 2023](https://doi.org/10.1038/s41597-023-02335-4)) | Figure 5 k-r | [README](prad/README.md) |
 
-Each subdirectory ships:
+Each subdirectory contains:
 
 - the small published source tables it consumes,
 - a `build_<cohort>_metadata.py` script that joins them with TCGA
@@ -40,5 +40,5 @@ Each subdirectory ships:
   2018 endpoint variants (`PFI.1` is the recommended primary endpoint
   for PRAD because DSS is underpowered, ~5 events).
 - **Reference papers** (PDFs of Leiria 2025, Howard 2023, Laajala 2023)
-  are not shipped to keep the repository copyright-clean; full
+  are not redistributed to keep the repository copyright-clean; full
   citations live in each cohort's README and build-script docstring.

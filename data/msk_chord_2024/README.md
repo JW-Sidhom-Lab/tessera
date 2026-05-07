@@ -28,7 +28,7 @@ Files consumed by this pipeline:
 | `data_cna_hg19.seg` | 63 MB | downstream CNA pipeline (in `methods/data/msk_chord/`) |
 | `data_gene_panel_matrix.txt` | 1.1 MB | downstream CNA pipeline (sample-to-panel mapping) |
 
-Place all files in this directory. The MSK-CHORD `LICENSE` is shipped with the
+Place all files in this directory. The MSK-CHORD `LICENSE` is included in the
 repo for redistribution context but **does not** authorise re-uploading the
 data; users must download it themselves.
 
