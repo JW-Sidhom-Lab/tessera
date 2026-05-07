@@ -50,6 +50,36 @@ The single configuration in `model_config_infonce.py`:
 - **No LOH head** (`predict_cna_loh = False`), matching the NoLOH
   cross-platform variant used for MSK-CHORD validation.
 
+## Missing-modality handling
+
+Joint training does not require both SNV and CNA data per sample. Every
+sample that has at least one modality enters the dataset and contributes
+to that modality's reconstruction loss; only the intersection cohort
+drives the cross-modal InfoNCE alignment.
+
+- `tessera.base._prepare_dataset_inputs` collects all SNV-bearing
+  samples, then unions in CNA-only samples (with empty SNV bag) so a
+  single batch can mix SNV-only / CNA-only / both-modality samples.
+  Missing slots are zero-padded; the chromosome embedding's `0` index
+  is reserved as the padding sentinel.
+- In the `train_step`, a per-sample boolean `valid_pairs_mask` is
+  computed from the padding sentinel:
+  `has_mut = any(chr != 0)` and `has_cna = any(cna_chr != 0)`,
+  per sample; `valid_pairs_mask = has_mut AND has_cna`.
+- `compute_infonce_loss` multiplies the per-sample contrastive loss by
+  this mask and divides by the number of valid pairs, so single-
+  modality samples contribute zero to both numerator and denominator
+  of the InfoNCE term.
+- The two reconstruction losses are masked at the **token** level (via
+  the same padding sentinel), so a CNA-only sample's empty SNV bag
+  contributes zero to the SNV reconstruction loss while its CNA
+  segments contribute normally, and vice versa.
+
+The net effect on the manuscript model: every TCGA Pan-Cancer sample
+with either modality contributes to its own reconstruction objective,
+while only the (large) SNV+CNA intersection cohort shapes the
+cross-modal alignment.
+
 ## Running
 
 ```bash
