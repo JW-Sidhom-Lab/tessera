@@ -88,7 +88,7 @@ python joint_cox.py
 
 | Path | Description |
 |---|---|
-| `analysis_results_<cohort>_infonce_per_sample_loss/data/fig5_cache.csv` | Per-sample UMAP coords, Risk_Score, Risk_Group, Subtype, survival. Consumed by `manuscript/build/figure5.py`. |
+| `analysis_results_<cohort>_infonce_per_sample_loss/data/fig5_cache.csv` | Per-sample UMAP coords, Risk_Score, Risk_Group, Subtype, survival. Source data for Fig. 5 panels. |
 | `analysis_results_<cohort>_infonce_per_sample_loss/plots/` | Per-cohort UMAP overlays + KM panels. |
 | `analysis_results_brca_infonce_per_sample_loss/joint_cox_continuous_brca_prad.txt` | The manuscript Figure 5 c-j and Figure 5 k-r joint-Cox numbers (HR per +1 SD, 95% CI, P, joint C, Spearman ρ). |
 

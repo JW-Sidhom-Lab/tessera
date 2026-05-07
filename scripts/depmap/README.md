@@ -25,9 +25,9 @@ validation".
                        ▼ analyze_depmap.py                                         [local]
        results/analysis/preference_per_cell_line.tsv
        results/analysis/preference_test.tsv
-                       │
-                       ▼ manuscript/build/figure6_signature_panels.py             (renders Fig 6 n)
 ```
+
+The two TSVs `analyze_depmap.py` writes are the data backing Fig. 6 n.
 
 ## Files
 

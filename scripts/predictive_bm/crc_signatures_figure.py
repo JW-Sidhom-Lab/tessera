@@ -28,7 +28,7 @@ from core.arm_mapping import label_signature_feature
 
 OUT = ROOT / "attribution_analysis" / "crc_signatures"
 FIG_DIR = OUT / "figure_panels"
-DATA_DIR = OUT / "panel_data"     # csv/tsv files for manuscript/build/ to read
+DATA_DIR = OUT / "panel_data"     # csv/tsv files: data backing the figure panels
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 

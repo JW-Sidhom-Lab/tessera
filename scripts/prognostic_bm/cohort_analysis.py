@@ -3007,9 +3007,9 @@ for cl in sorted(sample_assignments['Cluster'].unique()):
 # ============================================================================
 # CACHE EXPORT FOR FIGURE 5 RENDERING
 # ============================================================================
-# Per-sample DataFrame with everything manuscript/build/figure5.py needs to
-# render Nature-style panels: UMAP coords, GMM cluster, polynomial-Cox
-# risk score / risk group, the categorical subtype label, and survival.
+# Per-sample DataFrame with the columns needed to render the Figure 5
+# panels: UMAP coords, GMM cluster, polynomial-Cox risk score / risk
+# group, the categorical subtype label, and survival.
 # One CSV per cohort, written alongside the existing sample_assignments.csv.
 print("\n" + "=" * 80)
 print("EXPORTING FIGURE 5 CACHE")

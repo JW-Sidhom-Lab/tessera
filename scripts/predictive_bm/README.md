@@ -52,7 +52,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
                                        │
                                        ▼
                        results/figures/<cohort>/figure6/
-                       (npz + meta.json consumed by manuscript/build/figure6*.py)
+                       (npz + meta.json: data backing Fig 6 + Sup Fig 11)
 ```
 
 ## Files
@@ -73,7 +73,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
 | [`pdac_triplet_rule.py`](pdac_triplet_rule.py) | TP53 + 17p-intact + 20q+ triplet; Sup 12 c-e. |
 | [`crc_ablation.py`](crc_ablation.py), [`pdac_ablation.py`](pdac_ablation.py), [`_ablation_lib.py`](_ablation_lib.py) | Three-way Local / +Global / +InfoNCE feature-slice ablation; Sup 11. |
 | [`quantify_reassignment_benefit.py`](quantify_reassignment_benefit.py) | SEER-Medicare 1L stage IV CRC reassignment projection. |
-| [`compute_panel_stats.py`](compute_panel_stats.py) | Aggregates everything into the npz + meta.json bundle that `manuscript/build/figure6*.py` reads. |
+| [`compute_panel_stats.py`](compute_panel_stats.py) | Aggregates the per-cohort prediction CSVs into the per-stratum survival statistics (KM curves, Cox HRs, sliding-window HR(tau), tau_0) backing the Fig 6 + Sup Fig 11 panels. Writes `panels.npz` + `ablation.npz` + `meta.json` per cohort. |
 | [`get_latent_features.py`](get_latent_features.py) | Frozen TESSERA inference on MSK-CHORD; produces the 4.7 GB latents pkl. |
 | [`export_scalers.py`](export_scalers.py) | Saves the SNV / CNA RobustScaler state + feature ordering so the DepMap module can apply β_eff to external embeddings. |
 

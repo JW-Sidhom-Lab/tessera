@@ -20,8 +20,8 @@ Outputs, per cohort, under ``results/figures/<cohort>/figure6/``:
   ablation.npz   same statistics for the three ablation slices
   meta.json      tau_0, sample sizes, axis limits
 
-No matplotlib; the renderer in ``manuscript/build/figure6*.py``
-consumes these bundles directly.
+No matplotlib; the bundles are the data backing the published Fig 6
+and Sup Fig 11 panels.
 """
 from __future__ import annotations
 
