@@ -102,7 +102,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
 ```bash
 cd scripts/predictive_bm
 
-# 1. Frozen-model inference on MSK-CHORD (one-time, ~4.7 GB output, RunPod)
+# 1. Frozen-model inference on MSK-CHORD (one-time, ~4.7 GB output; GPU recommended)
 python3 get_latent_features.py
 
 # 2. CRC track

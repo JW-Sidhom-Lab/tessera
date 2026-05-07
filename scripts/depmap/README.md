@@ -13,7 +13,7 @@ validation".
 ../data/depmap/snv_panel.csv + cna_panel.csv          (panel-restricted DepMap inputs from scripts/data/depmap/prepare_depmap_data.py)
 ../tcga_pancan_snv_cna/models/...InfoNCE_per_sample_loss_noLOH/best_model.keras
                        │
-                       ▼ get_latent_features.py                                    [RunPod]
+                       ▼ get_latent_features.py
        depmap_latent_features_panel.pkl
                        │
                        │ + ../predictive_bm/cache/msk_chord_scalers.pkl
@@ -53,7 +53,7 @@ by `scripts/data/depmap/prepare_depmap_data.py` for this purpose.
 ```bash
 cd scripts/depmap
 
-# 1. Frozen-model inference on DepMap (one-time, ~451 MB output, RunPod)
+# 1. Frozen-model inference on DepMap (one-time, ~451 MB output; GPU recommended)
 python3 get_latent_features.py
 
 # 2. Compute tau_hat per cell line (local, seconds)
