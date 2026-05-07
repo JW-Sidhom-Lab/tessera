@@ -8,7 +8,7 @@ Fits the doubly-robust learner on MSK-CHORD 1L stage IV CRC:
     sign-aligned tau via interaction Cox direction
     interaction P, indifference threshold, per-stratum HRs
 
-Writes the predictions CSV consumed by build_figure6_panels.py to
+Writes the predictions CSV consumed by compute_panel_stats.py to
 produce Fig 6 b-e and Sup Fig 10 a-b.
 """
 from __future__ import annotations

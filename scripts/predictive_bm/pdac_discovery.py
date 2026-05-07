@@ -2,7 +2,7 @@
 
 Fits the same doubly-robust learner pipeline as crc_discovery.py on
 MSK-CHORD 1L stage IV PDAC. Writes the predictions CSV consumed by
-build_figure6_panels.py to produce Fig 6 f-i and Sup Fig 10 c-d.
+compute_panel_stats.py to produce Fig 6 f-i and Sup Fig 10 c-d.
 """
 from __future__ import annotations
 

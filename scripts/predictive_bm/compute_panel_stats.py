@@ -1,13 +1,27 @@
-"""Compute every numeric artifact needed to render manuscript Figure 6.
+"""Aggregate per-patient predictions into per-stratum survival statistics.
 
-Outputs (per cohort, under results/figures/<cohort>/figure6/):
-  panels.npz       - all KM curves and HR/CI/P scalars for the full-feature run
-  ablation.npz     - KM curves + HR/CI/P for the local / local+global / full slices
-  meta.json        - scalar context (τ̂_0, sample sizes, axis limits)
+Reads the prediction CSVs written by ``crc_discovery.py`` and
+``pdac_discovery.py`` (one row per patient with ``tau``, ``arm``,
+PFS, OS) and computes, for each cohort:
 
-This script does ALL fitting (Cox, KM curves, sliding-window HR, threshold).
-The build/build_figure_6.py script under manuscript/ only loads these npz/json
-files and renders matplotlib panels.
+  - the indifference threshold tau_0 (from the interaction Cox)
+  - per-stratum cross-arm Cox HRs (HR + CI + P) and logrank P-values
+  - per-stratum Kaplan-Meier curves
+  - a sliding-window HR(tau) curve along the tau axis
+  - a smooth analytic HR(tau) curve from the interaction Cox
+  - the pooled-cohort split as a prognostic-null check
+
+The same aggregation is run for the three feature-slice ablations
+(Local / +Global / +InfoNCE) feeding Sup Fig 11.
+
+Outputs, per cohort, under ``results/figures/<cohort>/figure6/``:
+
+  panels.npz     KM curves + HR/CI/P scalars + HR(tau) curves (full feature run)
+  ablation.npz   same statistics for the three ablation slices
+  meta.json      tau_0, sample sizes, axis limits
+
+No matplotlib; the renderer in ``manuscript/build/figure6*.py``
+consumes these bundles directly.
 """
 from __future__ import annotations
 

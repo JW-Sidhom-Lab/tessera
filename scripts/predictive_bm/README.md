@@ -48,7 +48,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
        └────► quantify_reassignment_benefit.py        (SEER-Medicare projection in main text)
                                        │
                                        ▼
-                           build_figure6_panels.py
+                           compute_panel_stats.py
                                        │
                                        ▼
                        results/figures/<cohort>/figure6/
@@ -73,7 +73,7 @@ TCGA-pretrained TESSERA SNV+CNA InfoNCE-noLOH checkpoint
 | [`pdac_triplet_rule.py`](pdac_triplet_rule.py) | TP53 + 17p-intact + 20q+ triplet; Sup 12 c-e. |
 | [`crc_ablation.py`](crc_ablation.py), [`pdac_ablation.py`](pdac_ablation.py), [`_ablation_lib.py`](_ablation_lib.py) | Three-way Local / +Global / +InfoNCE feature-slice ablation; Sup 11. |
 | [`quantify_reassignment_benefit.py`](quantify_reassignment_benefit.py) | SEER-Medicare 1L stage IV CRC reassignment projection. |
-| [`build_figure6_panels.py`](build_figure6_panels.py) | Aggregates everything into the npz + meta.json bundle that `manuscript/build/figure6*.py` reads. |
+| [`compute_panel_stats.py`](compute_panel_stats.py) | Aggregates everything into the npz + meta.json bundle that `manuscript/build/figure6*.py` reads. |
 | [`get_latent_features.py`](get_latent_features.py) | Frozen TESSERA inference on MSK-CHORD; produces the 4.7 GB latents pkl. |
 | [`export_scalers.py`](export_scalers.py) | Saves the SNV / CNA RobustScaler state + feature ordering so the DepMap module can apply β_eff to external embeddings. |
 
@@ -123,7 +123,7 @@ python3 pdac_triplet_rule.py
 python3 pdac_ablation.py
 
 # 4. Figure-6 panel bundle for the manuscript build chain
-python3 build_figure6_panels.py
+python3 compute_panel_stats.py
 
 # 5. Optional: scaler export for the DepMap cell-line module
 python3 export_scalers.py
