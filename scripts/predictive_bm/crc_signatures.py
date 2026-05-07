@@ -80,15 +80,15 @@ def build_attribution_matrix(*, force: bool = False):
         with open(cache_path, "rb") as fh:
             return pickle.load(fh)
 
-    banner("Step 1 — load patient features")
+    banner("Step 1 - load patient features")
     feat = build_patient_features(RAW_PKL, cache=CACHE)
     print(f"  patient features: {feat.shape}")
 
-    banner("Step 2 — build CRC stage IV first-line cohort")
+    banner("Step 2 - build CRC stage IV first-line cohort")
     df, X = build_crc_met(GT, feat, horizon_months=HORIZON)
     print(f"  cohort n={len(df)}; X shape={X.shape}")
 
-    banner("Step 3 — fit full-cohort DR-learner (no outer CV)")
+    banner("Step 3 - fit full-cohort DR-learner (no outer CV)")
     t1 = time.time()
     model = fit_full_data_model(
         df, X,
@@ -99,12 +99,12 @@ def build_attribution_matrix(*, force: bool = False):
     )
     print(f"  fit done in {time.time()-t1:.1f}s; PCA components={model['n_pca_components']}")
 
-    banner("Step 4 — reconstruction unit test")
+    banner("Step 4 - reconstruction unit test")
     rc = reconstruction_check(model, X)
     print(f"  max rel err = {rc['max_rel_err']:.3e}; passes = {rc['passes']}")
-    assert rc["passes"], "Reconstruction unit test failed — investigate before proceeding"
+    assert rc["passes"], "Reconstruction unit test failed - investigate before proceeding"
 
-    banner("Step 5 — load raw embeddings and per-variant attribution")
+    banner("Step 5 - load raw embeddings and per-variant attribution")
     with open(RAW_PKL, "rb") as fh:
         bundle = pickle.load(fh)
     snv_emb = bundle["variant_features"]
@@ -127,7 +127,7 @@ def build_attribution_matrix(*, force: bool = False):
     print(f"  attribution rows: {len(out['variant_attributions'])}")
     print(f"  attribution recon max rel err: {out['attr_recon_max_rel_err']:.3e}")
 
-    banner("Step 6 — feature-level aggregation (genes for SNV, arms for CNA)")
+    banner("Step 6 - feature-level aggregation (genes for SNV, arms for CNA)")
     cna_meta_with_rid = cna_meta.copy()
     cna_meta_with_rid["row_id"] = cna_meta_with_rid.index
     cna_for_overlap = cna_meta_with_rid.rename(

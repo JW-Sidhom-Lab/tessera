@@ -37,7 +37,7 @@ from .spls import SparsePLS
 
 
 # ============================================================================
-# 1. Full-data refit — single SparsePLS τ̂ on the full cohort
+# 1. Full-data refit - single SparsePLS τ̂ on the full cohort
 # ============================================================================
 
 def fit_full_data_model(
@@ -108,7 +108,7 @@ def build_effective_coefficients(model: dict) -> tuple[np.ndarray, float]:
     affine map  τ̂_p = β_x_eff · x_p + const_eff  on the 3716-d input space.
 
     Verification: caller should compute τ̂ via this composed map and compare
-    against model['tau_full'] — mismatch should be < 1e-6 (float roundoff).
+    against model['tau_full'] - mismatch should be < 1e-6 (float roundoff).
     """
     raw   = model["raw_scaler"]
     pca   = model["pca"]
@@ -272,7 +272,7 @@ def attribute_cohort(
     model: dict,
     X_patients: np.ndarray,                  # (n, 3716)
     patients: list[str],                     # length n
-    tau_true: np.ndarray,                    # (n,) — model['tau_full'] sliced to these patients
+    tau_true: np.ndarray,                    # (n,) - model['tau_full'] sliced to these patients
     snv_emb_scaled: np.ndarray,
     cna_emb_scaled: np.ndarray,
     snv_meta: pd.DataFrame,

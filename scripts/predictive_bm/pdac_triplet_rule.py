@@ -4,7 +4,7 @@ Sig 8 of the PDAC PMD decomposition at K=10 is dominated by three biology
 signals (positive directional loadings on the FFX axis): 10q amplification,
 TP53 mutation, and 17p intact (negative loading on 17p_LOSS). Rather than
 report 10q amplification at the strict log2 > +0.2 threshold (only 19/771
-patients), the manifest rule swaps in 20q amplification — the next-largest
+patients), the manifest rule swaps in 20q amplification - the next-largest
 positive arm loading on Sig 8 (+0.16 directional) and a much more prevalent
 event in PDAC (~21%). This trades a small loading-magnitude reduction for
 a much larger and more clinically usable subgroup.
@@ -21,9 +21,9 @@ figure (panels c, d, e).
 
 Outputs:
   attribution_analysis/pdac_signatures/triplet_rule/
-    triplet_per_group_metrics.tsv  — progressive subgroup forest data
-    panelD_triplet_rule_KM.tsv     — per-patient table for triplet KM
-    panelE_triplet_rest_KM.tsv     — per-patient table for "none of three" KM
+    triplet_per_group_metrics.tsv  - progressive subgroup forest data
+    panelD_triplet_rule_KM.tsv     - per-patient table for triplet KM
+    panelE_triplet_rest_KM.tsv     - per-patient table for "none of three" KM
 """
 from __future__ import annotations
 
@@ -116,7 +116,7 @@ def main():
     }
 
     print("=" * 78)
-    print("PDAC Sig 8 triplet rule — per-stratum PFS arm HR (FFX vs GA)")
+    print("PDAC Sig 8 triplet rule - per-stratum PFS arm HR (FFX vs GA)")
     print("=" * 78)
     rows = []
     for label, mask in groups.items():

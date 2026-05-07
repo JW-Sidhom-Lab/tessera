@@ -12,18 +12,18 @@ Method:
   2. Apply SEER-Medicare base rate (79.3% FOLFOX, 20.7% FOLFIRI),
      assuming biomarker classification is independent of current
      treatment assignment (consistent with Neugut 2019's null OS
-     finding — selection by toxicity not biology).
+     finding - selection by toxicity not biology).
   3. Compute reassignment percentages:
         FOLFOX→FOLFIRI = 79.3% × (1 − p_above)
         FOLFIRI→FOLFOX = 20.7% × p_above
   4. For each reassignment direction, compute the within-stratum
-     cross-arm median Δ for PFS and OS — the counterfactual benefit
+     cross-arm median Δ for PFS and OS - the counterfactual benefit
      a re-assigned patient would gain. The DR-learner τ̂_0 partition
      was specifically designed to remove treatment-assignment
      confounding via the doubly-robust pseudo-outcome, so within-
      stratum cross-arm comparisons are the right counterfactual proxy.
 
-Outputs: methods/predictive_bm/results/reassignment_benefit.tsv
+Outputs: results/reassignment_benefit.tsv
 """
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def main():
     df = pd.read_csv(ROOT / "results" / "crc_predictions.csv")
     print(f"loaded CRC predictions: {len(df)} patients")
 
-    # Step 1 — biomarker prevalence
+    # Step 1 - biomarker prevalence
     n_total = len(df)
     n_above = int((df["above_threshold"] == 1).sum())
     n_below = int((df["above_threshold"] == 0).sum())
@@ -89,7 +89,7 @@ def main():
     print(f"  predicted-FOLFOX-favoured (above τ̂_0):  n={n_above}  ({p_above*100:.1f}%)")
     print(f"  predicted-FOLFIRI-favoured (below τ̂_0): n={n_below}  ({p_below*100:.1f}%)")
 
-    # Step 2 — reassignment percentages projected to SEER-Medicare
+    # Step 2 - reassignment percentages projected to SEER-Medicare
     pct_FtoFI = SEER_FOLFOX  * p_below      # FOLFOX recipient, FOLFIRI-favoured by biomarker
     pct_FItoF = SEER_FOLFIRI * p_above      # FOLFIRI recipient, FOLFOX-favoured by biomarker
     pct_total = pct_FtoFI + pct_FItoF
@@ -100,7 +100,7 @@ def main():
     print(f"  Reassign FOLFIRI → FOLFOX:  {pct_FItoF*100:.1f}%   (= 20.7% × {p_above*100:.1f}%)")
     print(f"  Total reassigned:           {pct_total*100:.1f}%")
 
-    # Step 3 — within-stratum per-arm medians + Δ
+    # Step 3 - within-stratum per-arm medians + Δ
     # FOLFOX → FOLFIRI re-assigned patients land in the predicted-FOLFIRI-
     # favoured stratum (below τ̂_0); their counterfactual benefit is the
     # median Δ between FOLFIRI and FOLFOX in that stratum.
@@ -159,7 +159,7 @@ def main():
     summary.to_csv(OUT / "reassignment_benefit.tsv", sep="\t", index=False)
     print(f"\n→ {OUT / 'reassignment_benefit.tsv'}")
 
-    # Step 4 — population-projected summary
+    # Step 4 - population-projected summary
     banner("Population-scale summary (projected to SEER-Medicare distribution)")
     print(f"  {pct_total*100:.1f}% of patients re-assigned overall:")
     print(f"    {pct_FtoFI*100:.1f}% FOLFOX → FOLFIRI:")

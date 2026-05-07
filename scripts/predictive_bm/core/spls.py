@@ -110,7 +110,7 @@ class SparsePLS(BaseEstimator, RegressorMixin):
             t = Xd @ w
             tt = float(t.T @ t)
             if tt < 1e-12 or np.linalg.norm(w) < 1e-12:
-                # this component contributes nothing — stop
+                # this component contributes nothing - stop
                 break
             p_load = (Xd.T @ t) / tt
             q_load = (Yd.T @ t) / tt

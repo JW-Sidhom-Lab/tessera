@@ -74,7 +74,7 @@ def _arm_mu_oof(df: pd.DataFrame, X: np.ndarray, *,
         Z_te = spls.transform(arm_X[te])
         Kused = Z_tr.shape[1]
         if Kused == 0:
-            # PLS produced no components — fallback: predict cohort mean RMST
+            # PLS produced no components - fallback: predict cohort mean RMST
             # via Kaplan-Meier-ish proxy = mean Y_tr (rough but stable)
             pred[in_pos[te]] = np.mean(Y_tr)
             continue
@@ -153,7 +153,7 @@ def fit_dr_learner(
     """
     n = len(df)
 
-    # Preprocessing chain (fit on full cohort — unsupervised, mild leakage)
+    # Preprocessing chain (fit on full cohort - unsupervised, mild leakage)
     raw_scaler = StandardScaler().fit(X)
     Xz = raw_scaler.transform(X)
     pca = PCA(n_components=pca_var, random_state=seed).fit(Xz)

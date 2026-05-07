@@ -1,4 +1,4 @@
-"""PDAC signature heatmap (Panel A only, K=5).
+"""PDAC signature heatmap (Sup Fig 12 a).
 
 Mirrors crc_signatures_figure.py's panel A:
   - Rows: top-loaded SNV genes (above) and CNA arms (below) across K signatures
@@ -7,9 +7,13 @@ Mirrors crc_signatures_figure.py's panel A:
         cell = v*sign(rho) for SNVs (label fixed MUT)
   - Positive (red) = labeled direction loads positively on arm-1 (FOLFIRINOX) axis
 
+K defaults to 5; pass the desired rank as the first CLI argument
+(``python3 pdac_signatures_figure.py 10``) to render the manuscript
+K = 10 configuration.
+
 Inputs:
   attribution_analysis/pdac_signatures/attribution_matrix.pkl
-  attribution_analysis/pdac_signatures/pmd_K5_cv*.pkl
+  attribution_analysis/pdac_signatures/pmd_K{K}_cv*.pkl
 """
 from __future__ import annotations
 import sys, pickle, glob
@@ -202,99 +206,6 @@ def panel_a_signature_heatmap(state, pmd_res, *, figsize=(5.5, 7.0)):
     print(f"→ {FIG_DIR / 'panelA_signature_heatmap.pdf'} + .png")
 
 
-def export_panel_b_tp53_kras_data():
-    """Copy the TP53/KRAS per-group metrics to panel_data/ for canonical lookup."""
-    import shutil
-    src = OUT / "tp53_kras_simple" / "tp53_kras_per_group_metrics.tsv"
-    dst = DATA_DIR / "panelB_tp53_kras_metrics.tsv"
-    shutil.copyfile(src, dst)
-    print(f"  → {dst}")
-
-
-def panel_b_tp53_kras_forest(figsize=(6.5, 3.0)):
-    """Panel B: TP53/KRAS co-mutation rule (+ 17p LOSS refinement) — PFS arm HR forest.
-
-    PDAC arms: FOLFIRINOX (arm=1, red, HR<1) vs Gem/Abraxane (arm=0, blue, HR>1).
-    """
-    import matplotlib.ticker as mtick
-    metrics = pd.read_csv(DATA_DIR / "panelB_tp53_kras_metrics.tsv", sep="\t")
-
-    desired_order = [
-        "Both mut + 17p LOSS (TP53+/KRAS+/17p-)",
-        "Both mut (TP53+ / KRAS+)",
-        "TP53-only (TP53+ / KRAS-WT)",
-        "KRAS-only (TP53-WT / KRAS+)",
-        "Both WT (TP53-WT / KRAS-WT)",
-    ]
-    short_labels = {
-        "Both mut + 17p LOSS (TP53+/KRAS+/17p-)": r"TP53$+$ / KRAS$+$ / 17p$-$",
-        "Both mut (TP53+ / KRAS+)":               r"TP53$+$ / KRAS$+$",
-        "TP53-only (TP53+ / KRAS-WT)":            r"TP53$+$ / KRAS$-$",
-        "KRAS-only (TP53-WT / KRAS+)":            r"TP53$-$ / KRAS$+$",
-        "Both WT (TP53-WT / KRAS-WT)":            r"TP53$-$ / KRAS$-$",
-    }
-    available = [g for g in desired_order if g in metrics["group"].values]
-    metrics = metrics.set_index("group").loc[available].reset_index()
-    metrics["display_label"] = metrics["group"].map(short_labels)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    n_rows = len(metrics)
-    y_pos = np.arange(n_rows)[::-1]
-
-    for k in range(n_rows):
-        if k % 2 == 0:
-            ax.axhspan(y_pos[k] - 0.5, y_pos[k] + 0.5,
-                         color="#f5f5f5", zorder=0)
-
-    for i, row in metrics.iterrows():
-        y = y_pos[i]
-        hr, lo, hi = row["PFS_HR"], row["PFS_HR_lo"], row["PFS_HR_hi"]
-        if not np.isfinite(hr):
-            ax.text(1.0, y, "(insufficient n / arm imbalance)",
-                      fontsize=8, va="center", ha="center", color="gray", style="italic")
-            continue
-        color = "#c0392b" if hr < 1.0 else "#2980b9"
-        ax.errorbar(
-            hr, y,
-            xerr=[[max(0, hr - lo)], [max(0, hi - hr)]],
-            fmt="D", color=color, ecolor=color, capsize=2.5,
-            markersize=7, lw=1.4)
-
-    ax.axvline(1.0, color="black", lw=0.8, linestyle="--", alpha=0.6, zorder=1)
-    ax.set_xscale("log")
-    ax.set_xlim(0.25, 2.5)
-    xticks = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
-    ax.xaxis.set_major_locator(mtick.FixedLocator(xticks))
-    ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"{x:g}"))
-    ax.xaxis.set_minor_locator(mtick.NullLocator())
-    ax.tick_params(axis="x", labelsize=8)
-    ax.set_xlabel("PFS HR (FOLFIRINOX vs Gem/Abraxane), 95% CI", fontsize=9)
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(metrics["display_label"].tolist(), fontsize=8)
-    ax.tick_params(axis="y", length=0)
-    ax.set_title("PDAC TP53 / KRAS co-mutation rule", fontsize=10, pad=8)
-
-    x_text = 2.7
-    ax.text(x_text, n_rows - 0.5, "n  /  P (Wald)",
-              fontsize=8, va="bottom", ha="left", fontweight="bold")
-    for i, row in metrics.iterrows():
-        y = y_pos[i]
-        if np.isfinite(row["PFS_HR"]):
-            ax.text(x_text, y, f"n={int(row['n']):>4}   P={row['PFS_P']:.2g}",
-                      fontsize=8, va="center", ha="left", family="monospace")
-        else:
-            ax.text(x_text, y, f"n={int(row['n']):>4}   P=NA",
-                      fontsize=8, va="center", ha="left", family="monospace",
-                      color="gray")
-
-    fig.tight_layout()
-    fig.savefig(FIG_DIR / "panelB_tp53_kras_forest.pdf", bbox_inches="tight")
-    fig.savefig(FIG_DIR / "panelB_tp53_kras_forest.png", dpi=200,
-                  bbox_inches="tight")
-    plt.close(fig)
-    print(f"→ {FIG_DIR / 'panelB_tp53_kras_forest.pdf'} + .png")
-
-
 def main():
     with open(OUT / "attribution_matrix.pkl", "rb") as fh:
         state = pickle.load(fh)
@@ -317,12 +228,6 @@ def main():
     print("\n=== Rendering preview panels to figure_panels/ ===")
     export_panel_a_data(state, res)
     panel_a_signature_heatmap(state, res)
-
-    if (OUT / "tp53_kras_simple" / "tp53_kras_per_group_metrics.tsv").exists():
-        export_panel_b_tp53_kras_data()
-        panel_b_tp53_kras_forest()
-    else:
-        print("[skip] panel B forest — run pdac_tp53_kras_simple_rule.py first")
 
 
 if __name__ == "__main__":

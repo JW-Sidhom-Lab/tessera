@@ -14,7 +14,7 @@ variants per gene (TP53: 11K, KRAS: 7K, …) so these empirical boundaries
 closely approximate the true gene exons. For genes with few observations,
 boundaries may be conservative; pad by `pad_bp` (default 5kb) to cover this.
 
-This is fully self-contained — no internet or external GTF required.
+This is fully self-contained - no internet or external GTF required.
 """
 from __future__ import annotations
 

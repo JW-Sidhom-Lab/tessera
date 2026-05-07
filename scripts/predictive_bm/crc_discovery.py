@@ -1,16 +1,15 @@
-"""CRC FOLFOX vs FOLFIRI predictive biomarker — de-novo validation run.
+"""CRC FOLFOX vs FOLFIRI predictive biomarker.
 
-Reproduces the headline numbers from the prior analysis:
-  - PFS interaction P ~ 5e-5
-  - Above τ̂_0 (n~1040): PFS HR ~ 0.68, P ~ 5e-6
-  - Below τ̂_0 (n~412):  PFS HR ~ 1.39, P ~ 0.014
+Fits the doubly-robust learner on MSK-CHORD 1L stage IV CRC:
 
-Pipeline:
   build_patient_features (cached)  ->  build_crc_met
-  ->  StandardScaler -> PCA(0.99) -> StandardScaler
-  ->  DR-learner with sparse-PLS regressors, nested 10x5 CV
-  ->  sign-align tau via interaction Cox direction
-  ->  interaction P, threshold, above/below HRs
+    StandardScaler -> PCA(0.99) -> StandardScaler
+    DR-learner with sparse-PLS regressors, nested 10x5 CV
+    sign-aligned tau via interaction Cox direction
+    interaction P, indifference threshold, per-stratum HRs
+
+Writes the predictions CSV consumed by build_figure6_panels.py to
+produce Fig 6 b-e and Sup Fig 10 a-b.
 """
 from __future__ import annotations
 
@@ -55,12 +54,12 @@ def banner(title: str):
 
 def main():
     t0 = time.time()
-    banner("Step 1 — load patient features (build or load cache)")
+    banner("Step 1 - load patient features (build or load cache)")
     feat = build_patient_features(RAW_PKL, cache=CACHE)
     print(f"  feature matrix shape: {feat.shape}")
     print(f"  elapsed: {time.time()-t0:.1f}s")
 
-    banner("Step 2 — build CRC stage IV first-line cohort")
+    banner("Step 2 - build CRC stage IV first-line cohort")
     df, X = build_crc_met(GT, feat, horizon_months=HORIZON)
     arm_counts = df["arm"].value_counts().to_dict()
     print(f"  cohort n={len(df)}")
@@ -69,7 +68,7 @@ def main():
     print(f"  OS  events: {int(df['os_e'].sum())}/{len(df)}")
     print(f"  X shape: {X.shape}")
 
-    banner("Step 3 — fit DR-learner (nested 10x5 CV)")
+    banner("Step 3 - fit DR-learner (nested 10x5 CV)")
     print(f"  PCA={PCA_VAR}  K_mu1={K_MU1} sp={SP_MU1}  K_mu0={K_MU0} sp={SP_MU0}")
     print(f"  K_e={K_E} sp={SP_E}  K_tau={K_TAU} sp={SP_TAU}  seed={SEED}")
     t1 = time.time()
@@ -85,7 +84,7 @@ def main():
     print(f"  PCA components used: {res['n_pca_components']}")
     print(f"  τ̂ NaN count: {int(np.isnan(res['tau_oof']).sum())}")
 
-    banner("Step 4 — sign-align τ̂")
+    banner("Step 4 - sign-align τ̂")
     raw = res["tau_oof"]
     itx_raw = interaction_test(df, raw, time_col="pfs_t", event_col="pfs_e")
     sign = -1.0 if itx_raw["HR"] > 1.0 else +1.0
@@ -93,7 +92,7 @@ def main():
     df["tau"] = tau
     print(f"  raw interaction HR={itx_raw['HR']:.3f}; sign-flip={sign:+.0f}")
 
-    banner("Step 5 — HEADLINE NUMBERS")
+    banner("Step 5 - interaction Cox + per-stratum HRs")
     itx_pfs = interaction_test(df, tau, time_col="pfs_t", event_col="pfs_e")
     itx_os  = interaction_test(df, tau, time_col="os_t",  event_col="os_e")
     print(f"  PFS interaction: HR = {itx_pfs['HR']:.3f} "
@@ -121,12 +120,6 @@ def main():
           f"[{a_os['HR_lo']:.3f}, {a_os['HR_hi']:.3f}]   P = {a_os['P']:.3e}")
     print(f"  BELOW OS   n={b_os['n']:4d}   HR(FOLFOX vs FOLFIRI) = {b_os['HR']:.3f} "
           f"[{b_os['HR_lo']:.3f}, {b_os['HR_hi']:.3f}]   P = {b_os['P']:.3e}")
-
-    banner("TARGETS (from prior validated run / project memory)")
-    print("  PFS interaction P ~ 5e-5")
-    print("  ABOVE PFS  n~1040   HR ~ 0.68   P ~ 5e-6")
-    print("  BELOW PFS  n~ 412   HR ~ 1.39   P ~ 0.014")
-    print("  OS  interaction P ~ 0.04")
 
     out_csv = RESULTS / "crc_predictions.csv"
     df_save = df[["pid", "PATIENT_ID", "REGIMEN", "arm",

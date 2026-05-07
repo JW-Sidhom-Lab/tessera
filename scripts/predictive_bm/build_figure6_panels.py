@@ -1,9 +1,9 @@
 """Compute every numeric artifact needed to render manuscript Figure 6.
 
 Outputs (per cohort, under results/figures/<cohort>/figure6/):
-  panels.npz       — all KM curves and HR/CI/P scalars for the full-feature run
-  ablation.npz     — KM curves + HR/CI/P for the local / local+global / full slices
-  meta.json        — scalar context (τ̂_0, sample sizes, axis limits)
+  panels.npz       - all KM curves and HR/CI/P scalars for the full-feature run
+  ablation.npz     - KM curves + HR/CI/P for the local / local+global / full slices
+  meta.json        - scalar context (τ̂_0, sample sizes, axis limits)
 
 This script does ALL fitting (Cox, KM curves, sliding-window HR, threshold).
 The build/build_figure_6.py script under manuscript/ only loads these npz/json
@@ -200,7 +200,7 @@ def compute_main(df: pd.DataFrame, cfg: dict) -> tuple[dict, dict]:
                       event_observed_A=above["pfs_e"],
                       event_observed_B=below["pfs_e"])
     pooled_lr_p = float(lr.p_value)
-    # Cox HR(above vs below) on PFS, pooled (no arm adjustment) — should be ~1 if τ̂ is purely predictive
+    # Cox HR(above vs below) on PFS, pooled (no arm adjustment) - should be ~1 if τ̂ is purely predictive
     cph = CoxPHFitter().fit(
         df.assign(above=df["recommended"])[["pfs_t","pfs_e","above"]],
         duration_col="pfs_t", event_col="pfs_e")
@@ -224,7 +224,7 @@ def compute_main(df: pd.DataFrame, cfg: dict) -> tuple[dict, dict]:
         # sliding window HR curve (empirical, kept for diagnostic plots)
         hr_curve_tau=hr_centers, hr_curve_HR=hr_vals,
         hr_curve_lo=hr_lo, hr_curve_hi=hr_hi,
-        # Smooth analytic HR(τ̂) from the interaction Cox model — primary panel
+        # Smooth analytic HR(τ̂) from the interaction Cox model - primary panel
         hr_smooth_tau=tau_grid, hr_smooth_HR=hr_smooth_HR,
         hr_smooth_lo=hr_smooth_lo, hr_smooth_hi=hr_smooth_hi,
         beta_T=beta_T, beta_int=beta_int,
@@ -291,7 +291,7 @@ def compute_ablation(slices: dict, cfg: dict) -> dict:
 def main():
     for name, cfg in COHORTS.items():
         if not cfg["pred_csv"].exists():
-            print(f"[{name}] SKIP — {cfg['pred_csv']} not found")
+            print(f"[{name}] SKIP - {cfg['pred_csv']} not found")
             continue
         out_dir = RESULTS / "figures" / name / "figure6"
         out_dir.mkdir(parents=True, exist_ok=True)

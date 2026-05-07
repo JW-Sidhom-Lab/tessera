@@ -13,8 +13,8 @@ A signature passes the predictive-biomarker test if:
 
 Outputs:
   attribution_analysis/crc_signatures/signature_validation/
-    signature_metrics.tsv  — interaction HR/P, τ̂0, per-stratum HR/P/n
-    fig_signature_KMs.pdf  — multi-panel KM grid (one row per signature)
+    signature_metrics.tsv  - interaction HR/P, τ̂0, per-stratum HR/P/n
+    fig_signature_KMs.pdf  - multi-panel KM grid (one row per signature)
     fig_signature_KMs.png
 """
 from __future__ import annotations

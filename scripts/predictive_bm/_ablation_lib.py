@@ -2,7 +2,7 @@
 
 Tests whether the foundation model's predictive signal lives in:
   LOCAL         = variant-intrinsic + local sequence attention only
-                  (context-INDEPENDENT — same allele in different patients
+                  (context-INDEPENDENT - same allele in different patients
                    gives same embedding)
   LOCAL+GLOBAL  = adds within-modality self-attention (patient-context)
                   (variant attends to other variants in same modality;
@@ -241,7 +241,7 @@ def run_cohort(cohort_name, gt_path, builder, cfg, arm1_label, arm0_label, out_d
     # Run all 3 ablations
     ablations = {}
     for name, slices in ABLATIONS.items():
-        banner(f"{cohort_name} — {name}")
+        banner(f"{cohort_name} - {name}")
         feat = build_patient_features_sliced(snv_emb, cna_emb, snv_meta, cna_meta,
                                                     *slices["snv"], *slices["cna"])
         df, X = builder(gt_path, feat, horizon_months=36.0)

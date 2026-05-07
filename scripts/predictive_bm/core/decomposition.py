@@ -1,8 +1,8 @@
 """Sparse low-rank decomposition of the per-(patient, gene) attribution matrix.
 
 Implements Penalized Matrix Decomposition (PMD) of Witten, Tibshirani, and
-Hastie (Biostatistics 2009; doi:10.1093/biostatistics/kxp008) — the L1-on-rows-
-and-L1-on-columns variant, denoted PMD(L1, L1) — directly in NumPy, with no R
+Hastie (Biostatistics 2009; doi:10.1093/biostatistics/kxp008) - the L1-on-rows-
+and-L1-on-columns variant, denoted PMD(L1, L1) - directly in NumPy, with no R
 dependency.
 
 For a signed matrix A ∈ R^{P × G}, PMD(L1, L1) finds a rank-K approximation
@@ -142,7 +142,7 @@ def pmd_l1l1(
     A : (P, G) numpy array, signed.
     K : number of components.
     c_u : L1 budget for left vectors (patient loadings). Range: [1, sqrt(P)].
-          Default: sqrt(P) (no effective penalty on patient loadings —
+          Default: sqrt(P) (no effective penalty on patient loadings -
           matching the conventional choice of leaving u dense).
     c_v : L1 budget for right vectors (gene loadings). Range: [1, sqrt(G)].
           Default: sqrt(G) / 2 (moderate sparsity on signatures).
@@ -158,7 +158,7 @@ def pmd_l1l1(
       V : (G, K) right vectors (gene loadings, unit L2 norm, sparse)
       n_iter : (K,) iterations to convergence per component
       reconstruction : (P, G) U @ diag(D) @ V^T
-      explained_var : float — ||reconstruction||_F^2 / ||A||_F^2
+      explained_var : float - ||reconstruction||_F^2 / ||A||_F^2
     """
     P, G = A.shape
     if c_u is None:

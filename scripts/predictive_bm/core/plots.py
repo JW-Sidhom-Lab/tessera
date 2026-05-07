@@ -80,19 +80,19 @@ def tau_distribution(df: pd.DataFrame, *, tau0: float, out_stem: Path,
             bbox=dict(facecolor="white", alpha=0.85, edgecolor="gray", linewidth=0.4))
     ax.set_xlabel("Predicted treatment effect τ̂ (RMST units)")
     ax.set_ylabel("Patient count")
-    ax.set_title(f"{cancer_label} — distribution of τ̂ with indifference threshold")
+    ax.set_title(f"{cancer_label} - distribution of τ̂ with indifference threshold")
     ax.legend(loc="upper right", frameon=False)
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 2. Tau density by arm (overlay) — should overlap if τ̂ isn't predicting arm
+# 2. Tau density by arm (overlay) - should overlap if τ̂ isn't predicting arm
 # ============================================================================
 
 def tau_density_by_arm(df: pd.DataFrame, *, out_stem: Path,
                           cancer_label: str = "CRC",
                           arm1_label: str = "FOLFOX", arm0_label: str = "FOLFIRI"):
-    """Overlapping density of τ̂ per arm — sanity check that τ̂ ≠ arm proxy."""
+    """Overlapping density of τ̂ per arm; verifies τ̂ is not just an arm proxy."""
     apply_default_style()
     fig, ax = plt.subplots(figsize=(8, 4.5))
     arm1 = df[df["arm"] == 1]["tau"].values
@@ -117,14 +117,14 @@ def tau_density_by_arm(df: pd.DataFrame, *, out_stem: Path,
             bbox=dict(facecolor="white", alpha=0.85, edgecolor="gray", linewidth=0.4))
     ax.set_xlabel("τ̂")
     ax.set_ylabel("Density")
-    ax.set_title(f"{cancer_label} — τ̂ density by treatment arm "
+    ax.set_title(f"{cancer_label} - τ̂ density by treatment arm "
                   f"(should overlap if τ̂ is not an arm proxy)")
     ax.legend(loc="upper right", frameon=False)
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 3. Personalized HR curve — sliding-window HR(arm1 vs arm0) along τ̂ percentile
+# 3. Personalized HR curve - sliding-window HR(arm1 vs arm0) along τ̂ percentile
 # ============================================================================
 
 def personalized_hr_curve(df: pd.DataFrame, *, time_col: str, event_col: str,
@@ -177,7 +177,7 @@ def personalized_hr_curve(df: pd.DataFrame, *, time_col: str, event_col: str,
     ax.set_yscale("log")
     ax.set_xlabel("τ̂  (sliding-window center)")
     ax.set_ylabel(f"HR({arm1_label} vs {arm0_label})  [log scale]")
-    ax.set_title(f"{cancer_label} — personalized HR curve  ({endpoint}, "
+    ax.set_title(f"{cancer_label} - personalized HR curve  ({endpoint}, "
                   f"window = {int(window_frac*100)}% of cohort)")
     ax.legend(loc="best", frameon=False)
     save_fig(fig, out_stem)
@@ -227,7 +227,7 @@ def threshold_split_km(df: pd.DataFrame, *, time_col: str, event_col: str,
         ax.set_ylabel("Survival probability")
         ax.legend(loc="lower left", frameon=False, fontsize=9)
         ax.set_title(f"{lbl}   n={len(sub)}")
-    fig.suptitle(f"{cancer_label} — {endpoint} cross-arm KM split at τ̂_0", fontsize=12, y=1.00)
+    fig.suptitle(f"{cancer_label} - {endpoint} cross-arm KM split at τ̂_0", fontsize=12, y=1.00)
     fig.tight_layout()
     save_fig(fig, out_stem)
 
@@ -270,12 +270,12 @@ def within_arm_tertile_km(df: pd.DataFrame, *, arm_value: int,
     ax.set_xlabel(f"{endpoint} (months)")
     ax.set_ylabel("Survival probability")
     ax.legend(loc="lower left", frameon=False, fontsize=9)
-    ax.set_title(f"{cancer_label} — {endpoint} within {arm_label} arm by τ̂ tertile  (n={len(sub)})")
+    ax.set_title(f"{cancer_label} - {endpoint} within {arm_label} arm by τ̂ tertile  (n={len(sub)})")
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 6. Concordance KM — concordant (got recommended) vs discordant
+# 6. Concordance KM - concordant (got recommended) vs discordant
 # ============================================================================
 
 def concordance_km(df: pd.DataFrame, *, time_col: str, event_col: str,
@@ -314,12 +314,12 @@ def concordance_km(df: pd.DataFrame, *, time_col: str, event_col: str,
     ax.set_xlabel(f"{endpoint} (months)")
     ax.set_ylabel("Survival probability")
     ax.legend(loc="lower left", frameon=False, fontsize=9)
-    ax.set_title(f"{cancer_label} — {endpoint} by concordance with biomarker recommendation")
+    ax.set_title(f"{cancer_label} - {endpoint} by concordance with biomarker recommendation")
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 7. Four-quadrant KM — (Rec arm × Got arm) full grid
+# 7. Four-quadrant KM - (Rec arm × Got arm) full grid
 # ============================================================================
 
 def four_quadrant_km(df: pd.DataFrame, *, time_col: str, event_col: str,
@@ -359,7 +359,7 @@ def four_quadrant_km(df: pd.DataFrame, *, time_col: str, event_col: str,
         ax.set_xlim(0, xlim); ax.set_ylim(0, 1.02)
         ax.set_xlabel(f"{endpoint} (months)")
         ax.set_ylabel("Survival probability")
-    fig.suptitle(f"{cancer_label} — {endpoint} by (recommended × actual) treatment quadrants",
+    fig.suptitle(f"{cancer_label} - {endpoint} by (recommended × actual) treatment quadrants",
                   fontsize=12, y=1.00)
     fig.tight_layout()
     save_fig(fig, out_stem)
@@ -412,15 +412,15 @@ def prognostic_test_grid(df: pd.DataFrame, *, out_stem: Path,
             ax.set_xlabel(f"{ep} (months)")
             if c == 0: ax.set_ylabel(f"{ep} survival probability")
             ax.legend(loc="lower left", frameon=False, fontsize=8)
-            ax.set_title(f"{ep} — {chrt_lbl} (n={len(chrt)})")
-    fig.suptitle(f"{cancer_label} — τ̂ should be predictive (per-arm fans opposite), "
+            ax.set_title(f"{ep} - {chrt_lbl} (n={len(chrt)})")
+    fig.suptitle(f"{cancer_label} - τ̂ should be predictive (per-arm fans opposite), "
                   f"not prognostic (pooled curves overlap)", fontsize=11, y=1.00)
     fig.tight_layout()
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 9. Forest plot (generic — takes list of subgroup HRs)
+# 9. Forest plot (generic - takes list of subgroup HRs)
 # ============================================================================
 
 def forest_plot(rows: list[dict], *, out_stem: Path, title: str,
@@ -482,7 +482,7 @@ def forest_plot(rows: list[dict], *, out_stem: Path, title: str,
     fig.subplots_adjust(left=0.30, right=0.70, top=0.92, bottom=0.10)
     save_fig(fig, out_stem)
 
-# Need access to matplotlib.transforms inside forest_plot — import lazily here.
+# Need access to matplotlib.transforms inside forest_plot - import lazily here.
 import matplotlib as mpl  # noqa: E402
 
 
@@ -513,12 +513,12 @@ def tau_by_subgroup(df: pd.DataFrame, *, subgroup_col: str, out_stem: Path,
     ax.set_xticks(range(len(cats)))
     ax.set_xticklabels([f"{c}\nn={n}" for c, n in zip(cats, counts)], fontsize=9)
     ax.set_ylabel("τ̂")
-    ax.set_title(f"{cancer_label} — τ̂ by {subgroup_col} {title_suffix}".rstrip())
+    ax.set_title(f"{cancer_label} - τ̂ by {subgroup_col} {title_suffix}".rstrip())
     save_fig(fig, out_stem)
 
 
 # ============================================================================
-# 11. Clinical benefit bars — median PFS/OS per (arm × τ̂ group)
+# 11. Clinical benefit bars - median PFS/OS per (arm × τ̂ group)
 # ============================================================================
 
 def clinical_benefit_bars(df: pd.DataFrame, *, group_col: str, group_labels: list[str],
@@ -568,7 +568,7 @@ def clinical_benefit_bars(df: pd.DataFrame, *, group_col: str, group_labels: lis
         ax.set_ylabel(f"Median {ep} (months)")
         ax.set_title(f"Median {ep} per ({group_col} × arm)")
         ax.legend(loc="upper right", frameon=False)
-    fig.suptitle(f"{cancer_label} — clinical benefit by τ̂ subgroup", fontsize=12, y=1.00)
+    fig.suptitle(f"{cancer_label} - clinical benefit by τ̂ subgroup", fontsize=12, y=1.00)
     fig.tight_layout()
     save_fig(fig, out_stem)
 
@@ -627,7 +627,7 @@ def headline_composite(df: pd.DataFrame, *, tau0: float, out_stem: Path,
     ax_b.set_yscale("log")
     ax_b.set_xlabel("τ̂  (window-median)")
     ax_b.set_ylabel(f"HR({arm1_label} vs {arm0_label}) [log]")
-    ax_b.set_title(f"b)  Personalized HR curve — PFS", loc="left")
+    ax_b.set_title(f"b)  Personalized HR curve - PFS", loc="left")
 
     # Panels c–f: threshold-split KMs for PFS and OS
     panels = [
@@ -653,8 +653,8 @@ def headline_composite(df: pd.DataFrame, *, tau0: float, out_stem: Path,
         ax.set_xlim(0, xl); ax.set_ylim(0, 1.02)
         ax.set_xlabel(f"{ep} (months)"); ax.set_ylabel("Survival probability")
         ax.legend(loc="lower left", frameon=False, fontsize=8)
-        ax.set_title(f"{letter})  {badge} — {ep}  (n={len(sub)})", loc="left")
+        ax.set_title(f"{letter})  {badge} - {ep}  (n={len(sub)})", loc="left")
 
-    fig.suptitle(f"{cancer_label} — predictive biomarker headline ({arm1_label} vs {arm0_label})",
+    fig.suptitle(f"{cancer_label} - predictive biomarker headline ({arm1_label} vs {arm0_label})",
                   fontsize=13, y=0.995)
     save_fig(fig, out_stem)

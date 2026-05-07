@@ -3,18 +3,18 @@ Extract SNV and CNA latent features from MSK-CHORD data using the trained
 TCGA SNV+CNA model (InfoNCE without LOH).
 
 Inputs (all produced by the data-creation scripts under
-methods/data/msk_chord/):
+scripts/data/msk_chord/):
     ../data/msk_chord/snv.csv              (create_snv.py)
     ../data/msk_chord/cna_panel_filtered.csv
         OR ../data/msk_chord/cna.csv       (selected via CNA_DATA_SOURCE below)
     models/TCGA_SNV_CNA_InfoNCE_noLOH/best_model.keras   (sync from S3)
 
 Output:
-    msk_chord_latent_features_<CNA_DATA_SOURCE>.pkl — dict with:
-        variant_features  — SNV embeddings
-        cna_features      — CNA embeddings
-        data_snv          — SNV metadata (same rows as variant_features)
-        data_cna          — CNA metadata (same rows as cna_features)
+    msk_chord_latent_features_<CNA_DATA_SOURCE>.pkl - dict with:
+        variant_features  - SNV embeddings
+        cna_features      - CNA embeddings
+        data_snv          - SNV metadata (same rows as variant_features)
+        data_cna          - CNA metadata (same rows as cna_features)
 """
 
 import pickle
@@ -35,9 +35,9 @@ BATCH_SIZE = 24
 MODEL_DIR = '../tcga_pancan_snv_cna/models/TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH'
 
 # CNA input source.  Options:
-#   'panel_filtered' — cna_panel_filtered.csv  (per-gene cross-joined, ~11.7M rows;
+#   'panel_filtered' - cna_panel_filtered.csv  (per-gene cross-joined, ~11.7M rows;
 #                                                default, matches prior runs)
-#   'raw'            — cna.csv                  (raw MSK-CHORD segments, ~1.3M rows;
+#   'raw'            - cna.csv                  (raw MSK-CHORD segments, ~1.3M rows;
 #                                                coarser, closer to TCGA segmentation)
 CNA_DATA_SOURCE = 'raw'
 _CNA_PATHS = {
@@ -52,9 +52,9 @@ CNA_CSV_PATH = _CNA_PATHS[CNA_DATA_SOURCE]
 OUTPUT_FILE = f'msk_chord_latent_features_{CNA_DATA_SOURCE}.pkl'
 
 # CNA normalization (match distribution of MSK-CHORD panel data to TCGA WES):
-#   'none'     — pass raw Segment_Mean values through (baseline)
-#   'linear'   — rescale to match TCGA global mean/std
-#   'quantile' — rank-map onto TCGA Segment_Mean distribution (matches full shape)
+#   'none'     - pass raw Segment_Mean values through (baseline)
+#   'linear'   - rescale to match TCGA global mean/std
+#   'quantile' - rank-map onto TCGA Segment_Mean distribution (matches full shape)
 NORMALIZATION_MODE    = 'quantile'
 TCGA_CNA_STATS_PATH   = '../data/tcga/cna_stats.json'
 TCGA_CNA_SORTED_PATH  = '../data/tcga/cna_sorted.npy'
@@ -165,7 +165,7 @@ if NORMALIZATION_MODE != 'none':
         print(f"\nLinear rescale MSK Segment_Mean to TCGA mean/std "
               f"(target mean={tcga_mean:.4f} std={tcga_std:.4f})")
         if msk_std_b == 0:
-            raise ValueError("MSK Segment_Mean std is 0 — cannot rescale.")
+            raise ValueError("MSK Segment_Mean std is 0 - cannot rescale.")
         cna_segment_means = (cna_segment_means - msk_mean_b) / msk_std_b * tcga_std + tcga_mean
 
     elif NORMALIZATION_MODE == 'quantile':
@@ -226,10 +226,10 @@ model.create_sample_dataset(
     # trained with predict_cna_loh=False (fit_model.py now passes cna_lohs=None
     # when predict_cna_loh=False, so the model graph has no cna_loh input).
     # If you hit "Missing data for input 'cna_loh'", the loaded model was
-    # trained with LOH as input — retrain with predict_cna_loh=False.
+    # trained with LOH as input - retrain with predict_cna_loh=False.
     cna_lohs=None,
     cna_subsample=None,
-    z_score_cna=False,    # do NOT re-normalize — Segment_Mean is already quantile-matched to TCGA above
+    z_score_cna=False,    # do NOT re-normalize - Segment_Mean is already quantile-matched to TCGA above
     z_score_clip=None,    # and the TCGA-trained model was itself trained on raw log2 ratios
 )
 print("   ✓ Dataset created")

@@ -16,8 +16,8 @@ HR<1 means FOLFIRINOX-favored; HR>1 means GA-favored.
 
 Outputs:
   attribution_analysis/pdac_signatures/signature_validation/
-    signature_metrics.tsv  — interaction HR/P, τ̂0, per-stratum HR/P/n
-    fig_signature_KMs.pdf  — multi-panel KM grid (one row per signature)
+    signature_metrics.tsv  - interaction HR/P, τ̂0, per-stratum HR/P/n
+    fig_signature_KMs.pdf  - multi-panel KM grid (one row per signature)
 """
 from __future__ import annotations
 

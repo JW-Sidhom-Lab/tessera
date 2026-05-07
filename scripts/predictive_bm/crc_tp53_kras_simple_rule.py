@@ -1,13 +1,9 @@
-"""Simple sanity check: stratify CRC patients by TP53 / KRAS co-mutation
-status (4 groups + an extra TP53+/KRAS+/17p-LOSS subgroup), and fit
-per-group arm-vs-PFS Cox + KM curves.
+"""CRC TP53 / KRAS / 17p genotype-rule subgroups.
 
-Hypothesis from Sig 4:
-  - TP53+/KRAS+ co-mutated favors FOLFOX (Both-mut HR<1)
-  - Adding 17p LOSS to the co-mutation should sharpen the FOLFOX signal
-    (17p_LOSS has a positive directional loading on Sig 4's FOLFOX axis)
-  - TP53-/KRAS- double-WT pushes nothing toward FOLFOX, so its arm HR
-    is uncertain but trends toward FOLFIRI.
+Stratifies CRC patients into five exclusive subgroups along the
+manuscript's two-way rule axis (TP53+/KRAS+/17p-LOSS, TP53+/KRAS+,
+TP53+/KRAS-, TP53-/KRAS+, TP53-/KRAS-) and fits per-subgroup
+arm-vs-PFS Cox + KM curves. Produces the data backing Fig 6 k-m.
 """
 from __future__ import annotations
 import sys, pickle

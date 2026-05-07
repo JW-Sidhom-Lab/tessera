@@ -2,9 +2,9 @@
 
 Tests whether the FM's predictive signal in PDAC FOLFIRINOX-vs-Gem/Abraxane
 lives in:
-  - LOCAL only (intrinsic + local sequence attention) — context-INDEPENDENT
-  - LOCAL+GLOBAL (adds within-modality self-attention) — patient-context
-  - FULL (adds InfoNCE projection) — implicit SNV+CNA cross-modal alignment
+  - LOCAL only (intrinsic + local sequence attention) - context-INDEPENDENT
+  - LOCAL+GLOBAL (adds within-modality self-attention) - patient-context
+  - FULL (adds InfoNCE projection) - implicit SNV+CNA cross-modal alignment
 
 Outputs:
   results/ablation/pdac_predictions_{local,local_global,full}.csv

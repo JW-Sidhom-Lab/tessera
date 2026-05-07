@@ -16,7 +16,7 @@ import time
 import pickle
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent     # methods/predictive_bm/
+ROOT = Path(__file__).resolve().parent.parent     # scripts/predictive_bm/
 sys.path.insert(0, str(ROOT))
 
 import numpy as np
@@ -75,15 +75,15 @@ def banner(title):
 def verify_one(cohort_key: str):
     cfg = COHORTS[cohort_key]
     t0 = time.time()
-    banner(f"[{cohort_key.upper()}] Step 1.1 — load patient features")
+    banner(f"[{cohort_key.upper()}] Step 1.1 - load patient features")
     feat = build_patient_features(RAW_PKL, cache=CACHE)
     print(f"  feature matrix shape: {feat.shape}")
 
-    banner(f"[{cohort_key.upper()}] Step 1.2 — build cohort")
+    banner(f"[{cohort_key.upper()}] Step 1.2 - build cohort")
     df, X = cfg["build"](cfg["gt"], feat, horizon_months=HORIZON)
     print(f"  cohort n={len(df)}, X shape={X.shape}")
 
-    banner(f"[{cohort_key.upper()}] Step 1.3 — fit full-cohort DR-learner")
+    banner(f"[{cohort_key.upper()}] Step 1.3 - fit full-cohort DR-learner")
     t1 = time.time()
     model = fit_full_data_model(
         df, X,
@@ -98,17 +98,17 @@ def verify_one(cohort_key: str):
     print(f"  sign-flip: {model['sign']:+.0f}")
     print(f"  τ̂ range: [{model['tau_full'].min():.3f}, {model['tau_full'].max():.3f}]")
 
-    banner(f"[{cohort_key.upper()}] Step 1.4 — reconstruction unit test (β_eff · x_p + c_eff vs τ̂)")
+    banner(f"[{cohort_key.upper()}] Step 1.4 - reconstruction unit test (β_eff · x_p + c_eff vs τ̂)")
     rc = reconstruction_check(model, X)
     print(f"  max abs error:  {rc['max_abs_err']:.3e}")
     print(f"  mean abs error: {rc['mean_abs_err']:.3e}")
     print(f"  max rel error:  {rc['max_rel_err']:.3e}")
     print(f"  PASSES (rel < 1e-6): {rc['passes']}")
     if not rc["passes"]:
-        print(f"  ❌ FAILED — investigate before proceeding.")
+        print(f"  ❌ FAILED - investigate before proceeding.")
         return 1
 
-    banner(f"[{cohort_key.upper()}] Step 2 — per-(patient, variant) attribution")
+    banner(f"[{cohort_key.upper()}] Step 2 - per-(patient, variant) attribution")
     print("  loading raw embeddings...", flush=True)
     with open(RAW_PKL, "rb") as fh:
         bundle = pickle.load(fh)
@@ -145,15 +145,15 @@ def verify_one(cohort_key: str):
     print(f"  done in {time.time()-t2:.1f}s")
     print(f"  per-variant attributions: {len(out['variant_attributions'])} rows")
 
-    banner(f"[{cohort_key.upper()}] Step 2.1 — attribution reconstruction unit test")
+    banner(f"[{cohort_key.upper()}] Step 2.1 - attribution reconstruction unit test")
     print(f"  max abs error: {out['attr_recon_max_abs_err']:.3e}")
     print(f"  max rel error: {out['attr_recon_max_rel_err']:.3e}")
     print(f"  PASSES (rel < 1e-4): {out['attr_recon_passes']}")
     if not out["attr_recon_passes"]:
-        print(f"  ❌ FAILED — investigate before proceeding.")
+        print(f"  ❌ FAILED - investigate before proceeding.")
         return 1
 
-    banner(f"[{cohort_key.upper()}] Step 4 — gene-level aggregation")
+    banner(f"[{cohort_key.upper()}] Step 4 - gene-level aggregation")
     cna_meta_with_rid = cna_meta.copy()
     cna_meta_with_rid["row_id"] = cna_meta_with_rid.index
     rename_cna = {"Chromosome": "Chromosome", "Start": "Start", "End": "End"}
@@ -176,7 +176,7 @@ def verify_one(cohort_key: str):
     n_unique_genes = gene_attr["gene"].nunique()
     print(f"  unique genes: {n_unique_genes}")
 
-    banner(f"[{cohort_key.upper()}] Step 4.1 — per-patient gene-attribution sum check")
+    banner(f"[{cohort_key.upper()}] Step 4.1 - per-patient gene-attribution sum check")
     # Σ_g A_pg should equal Σ_v α_pv (sum of all per-variant attributions)
     # because gene aggregation just regroups the same numbers (with CNA segments
     # split equally across overlapping genes, so totals preserved).

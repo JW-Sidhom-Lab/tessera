@@ -34,7 +34,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================================================
-# Panel A — V matrix heatmap
+# Panel A - V matrix heatmap
 # ============================================================================
 
 def _snv_rho_map(state, snv_features: list[str]) -> dict[str, float]:
@@ -524,7 +524,7 @@ def panel_d_double_wt_km(figsize=(4.5, 3.5)):
 
 
 def panel_b_tp53_kras_forest(figsize=(6.5, 3.0)):
-    """Panel B: TP53/KRAS co-mutation rule (+ 17p LOSS refinement) — PFS arm HR forest.
+    """Panel B: TP53/KRAS co-mutation rule (+ 17p LOSS refinement) - PFS arm HR forest.
     """
     import matplotlib.ticker as mtick
     metrics = pd.read_csv(DATA_DIR / "panelB_tp53_kras_metrics.tsv", sep="\t")

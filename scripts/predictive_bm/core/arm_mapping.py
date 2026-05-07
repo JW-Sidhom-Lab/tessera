@@ -3,7 +3,7 @@
 Why: panel-level CN segments are typically arm-level or larger. Per-gene
 aggregation (in `gene_mapping.py`) attributes each segment equally across
 all panel genes it overlaps, which is statistically faithful to the panel
-data resolution but biologically misleading — a chr17p loss reads as
+data resolution but biologically misleading - a chr17p loss reads as
 "contributions from TP53, MAP2K4, NF1, RPA1, ..." instead of "chr17p loss".
 
 This module aggregates CNA attribution by chromosomal arm instead, matching
@@ -259,8 +259,8 @@ def label_signature_feature(
 ) -> str:
     """Build a biology-readable label for a single signature feature.
 
-    For SNVs:  "TP53(+0.745)"     — gene-name + signed loading
-    For arms:  "17p_LOSS(+0.258)" — arm-direction + signed loading
+    For SNVs:  "TP53(+0.745)"     - gene-name + signed loading
+    For arms:  "17p_LOSS(+0.258)" - arm-direction + signed loading
 
     The arm direction is determined by sign(v) × sign(rho), where rho is the
     Spearman correlation between the arm's attribution and its mean log2 ratio.

@@ -1,9 +1,8 @@
-"""PDAC FOLFIRINOX vs Gem/Abraxane predictive biomarker — de-novo validation run.
+"""PDAC FOLFIRINOX vs Gem/Abraxane predictive biomarker.
 
-Reproduces the headline numbers from the PCA(0.99) optimized PDAC config:
-  - PFS interaction P ~ 0.10
-  - Above τ̂_0 (n~729): PFS HR ~ 0.80, P ~ 0.003
-  - Below τ̂_0 (n~ 42): PFS HR ~ 2.38, P ~ 0.033
+Fits the same doubly-robust learner pipeline as crc_discovery.py on
+MSK-CHORD 1L stage IV PDAC. Writes the predictions CSV consumed by
+build_figure6_panels.py to produce Fig 6 f-i and Sup Fig 10 c-d.
 """
 from __future__ import annotations
 
@@ -48,12 +47,12 @@ def banner(title: str):
 
 def main():
     t0 = time.time()
-    banner("Step 1 — load patient features (cache reuse)")
+    banner("Step 1 - load patient features (cache reuse)")
     feat = build_patient_features(RAW_PKL, cache=CACHE)
     print(f"  feature matrix shape: {feat.shape}")
     print(f"  elapsed: {time.time()-t0:.1f}s")
 
-    banner("Step 2 — build PDAC stage IV first-line cohort")
+    banner("Step 2 - build PDAC stage IV first-line cohort")
     df, X = build_pdac_met(GT, feat, horizon_months=HORIZON)
     arm_counts = df["arm"].value_counts().to_dict()
     print(f"  cohort n={len(df)}")
@@ -63,7 +62,7 @@ def main():
     print(f"  OS  events: {int(df['os_e'].sum())}/{len(df)}")
     print(f"  X shape: {X.shape}")
 
-    banner("Step 3 — fit DR-learner (nested 10x5 CV)")
+    banner("Step 3 - fit DR-learner (nested 10x5 CV)")
     print(f"  PCA={PCA_VAR}  K_mu1={K_MU1} sp={SP_MU1}  K_mu0={K_MU0} sp={SP_MU0}")
     print(f"  K_e={K_E} sp={SP_E}  K_tau={K_TAU} sp={SP_TAU}  seed={SEED}")
     t1 = time.time()
@@ -78,7 +77,7 @@ def main():
     print(f"  DR-learner done in {time.time()-t1:.1f}s")
     print(f"  PCA components used: {res['n_pca_components']}")
 
-    banner("Step 4 — sign-align τ̂")
+    banner("Step 4 - sign-align τ̂")
     raw = res["tau_oof"]
     itx_raw = interaction_test(df, raw, time_col="pfs_t", event_col="pfs_e")
     sign = -1.0 if itx_raw["HR"] > 1.0 else +1.0
@@ -86,7 +85,7 @@ def main():
     df["tau"] = tau
     print(f"  raw interaction HR={itx_raw['HR']:.3f}; sign-flip={sign:+.0f}")
 
-    banner("Step 5 — HEADLINE NUMBERS")
+    banner("Step 5 - interaction Cox + per-stratum HRs")
     itx_pfs = interaction_test(df, tau, time_col="pfs_t", event_col="pfs_e")
     itx_os  = interaction_test(df, tau, time_col="os_t",  event_col="os_e")
     print(f"  PFS interaction: HR = {itx_pfs['HR']:.3f} "
@@ -114,11 +113,6 @@ def main():
           f"[{a_os['HR_lo']:.3f}, {a_os['HR_hi']:.3f}]   P = {a_os['P']:.3e}")
     print(f"  BELOW OS   n={b_os['n']:4d}   HR(FFX vs GA) = {b_os['HR']:.3f} "
           f"[{b_os['HR_lo']:.3f}, {b_os['HR_hi']:.3f}]   P = {b_os['P']:.3e}")
-
-    banner("TARGETS (from prior validated run / project memory)")
-    print("  PFS interaction P ~ 0.10")
-    print("  ABOVE PFS  n~729   HR ~ 0.80   P ~ 0.003")
-    print("  BELOW PFS  n~ 42   HR ~ 2.38   P ~ 0.033")
 
     out_csv = RESULTS / "pdac_predictions.csv"
     df_save = df[["pid", "PATIENT_ID", "REGIMEN", "arm",

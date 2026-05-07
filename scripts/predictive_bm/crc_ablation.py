@@ -1,9 +1,9 @@
 """CRC three-way ablation: LOCAL vs LOCAL+GLOBAL vs FULL.
 
 Tests whether the FM's predictive signal in CRC FOLFOX-vs-FOLFIRI lives in:
-  - LOCAL only (intrinsic + local sequence attention) — context-INDEPENDENT
-  - LOCAL+GLOBAL (adds within-modality self-attention) — patient-context
-  - FULL (adds InfoNCE projection) — implicit SNV+CNA cross-modal alignment
+  - LOCAL only (intrinsic + local sequence attention) - context-INDEPENDENT
+  - LOCAL+GLOBAL (adds within-modality self-attention) - patient-context
+  - FULL (adds InfoNCE projection) - implicit SNV+CNA cross-modal alignment
 
 Outputs:
   results/ablation/crc_predictions_{local,local_global,full}.csv

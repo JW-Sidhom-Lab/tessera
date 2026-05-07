@@ -2,16 +2,17 @@
 
 Pipeline mirrors crc_signatures.py:
   1. Load patient features and PDAC cohort (stage IV, first-line).
-  2. Fit full-cohort DR-learner; compose β_eff.
+  2. Fit full-cohort DR-learner; compose beta_eff.
   3. Compute per-(patient, variant/CNA) attribution.
   4. Aggregate to per-(patient, gene-or-arm) matrix A.
-  5. PMD(L1, L1) decomposition at fixed K=5 (no sweep yet).
+  5. PMD(L1, L1) decomposition. K defaults to 5; pass ``--K 10`` for
+     the manuscript Sup Fig 12 configuration.
   6. Save attribution matrix and decomposition results.
 
 Outputs:
   attribution_analysis/pdac_signatures/
-    attribution_matrix.pkl     (P × G + metadata)
-    pmd_K5_cv{c_v}.pkl
+    attribution_matrix.pkl     (P x G + metadata)
+    pmd_K{K}_cv{c_v}.pkl
     top_genes_per_signature.tsv
 """
 from __future__ import annotations
@@ -64,7 +65,7 @@ SEED    = 42
 HORIZON = 36.0
 
 # Signature decomposition config
-K_SIG = 5  # fixed (no sweep this pass)
+K_SIG = 5  # default rank; pass --K to override
 
 
 def banner(title):
@@ -83,11 +84,11 @@ def build_attribution_matrix(*, force: bool = False):
         with open(cache_path, "rb") as fh:
             return pickle.load(fh)
 
-    banner("Step 1 — load patient features")
+    banner("Step 1 - load patient features")
     feat = build_patient_features(RAW_PKL, cache=CACHE)
     print(f"  patient features: {feat.shape}")
 
-    banner("Step 2 — build PDAC stage IV first-line cohort")
+    banner("Step 2 - build PDAC stage IV first-line cohort")
     df, X = build_pdac_met(GT, feat, horizon_months=HORIZON)
     arm_counts = df["arm"].value_counts().to_dict()
     print(f"  cohort n={len(df)}")
@@ -96,7 +97,7 @@ def build_attribution_matrix(*, force: bool = False):
     print(f"  PFS events: {int(df['pfs_e'].sum())}/{len(df)}")
     print(f"  X shape: {X.shape}")
 
-    banner("Step 3 — fit full-cohort DR-learner (no outer CV)")
+    banner("Step 3 - fit full-cohort DR-learner (no outer CV)")
     t1 = time.time()
     model = fit_full_data_model(
         df, X,
@@ -107,12 +108,12 @@ def build_attribution_matrix(*, force: bool = False):
     )
     print(f"  fit done in {time.time()-t1:.1f}s; PCA components={model['n_pca_components']}")
 
-    banner("Step 4 — reconstruction unit test")
+    banner("Step 4 - reconstruction unit test")
     rc = reconstruction_check(model, X)
     print(f"  max rel err = {rc['max_rel_err']:.3e}; passes = {rc['passes']}")
-    assert rc["passes"], "Reconstruction unit test failed — investigate before proceeding"
+    assert rc["passes"], "Reconstruction unit test failed - investigate before proceeding"
 
-    banner("Step 5 — load raw embeddings and per-variant attribution")
+    banner("Step 5 - load raw embeddings and per-variant attribution")
     with open(RAW_PKL, "rb") as fh:
         bundle = pickle.load(fh)
     snv_emb = bundle["variant_features"]
@@ -135,7 +136,7 @@ def build_attribution_matrix(*, force: bool = False):
     print(f"  attribution rows: {len(out['variant_attributions'])}")
     print(f"  attribution recon max rel err: {out['attr_recon_max_rel_err']:.3e}")
 
-    banner("Step 6 — feature-level aggregation (genes for SNV, arms for CNA)")
+    banner("Step 6 - feature-level aggregation (genes for SNV, arms for CNA)")
     cna_meta_with_rid = cna_meta.copy()
     cna_meta_with_rid["row_id"] = cna_meta_with_rid.index
     cna_for_overlap = cna_meta_with_rid.rename(
@@ -172,7 +173,7 @@ def build_attribution_matrix(*, force: bool = False):
     print(f"  density (non-zero entries): {(A != 0).mean():.3f}")
     print(f"  Frobenius norm: {np.linalg.norm(A):.2f}")
 
-    banner("Step 7 — arm direction map (AMP vs LOSS at high attribution)")
+    banner("Step 7 - arm direction map (AMP vs LOSS at high attribution)")
     arm_dir = compute_arm_direction_map(A, features, is_arm, cna_meta, patients)
     print(f"  resolved {sum(1 for v in arm_dir.values() if v['sign'] != '?')} of "
           f"{is_arm.sum()} arms")
