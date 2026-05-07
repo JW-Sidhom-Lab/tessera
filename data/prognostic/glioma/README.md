@@ -9,7 +9,7 @@ endpoints for the TCGA glioma cohort. Used by Figure 4 g-h
 
 | File | Source |
 |---|---|
-| `Matrix_WHO2021.csv` | [Leiria et al. 2025, *Scientific Data* **12**, 5117](https://doi.org/10.1038/s41597-025-05117-2). Per-patient WHO 2021 simplified primary class. Downloaded verbatim from [`Final-outputs/Matrix_WHO2021.csv`](https://github.com/sysbiomed/MONET/blob/main/Final-outputs/Matrix_WHO2021.csv) of the [`sysbiomed/MONET`](https://github.com/sysbiomed/MONET) reclassification repository. |
+| `Matrix_WHO2021.csv` | [Leiria et al. 2025, *Scientific Data* **12**, 5117](https://doi.org/10.1038/s41597-025-05117-2). Per-patient WHO 2021 simplified primary class. Downloaded verbatim from [`Final-outputs/Matrix_WHO2021.csv`](https://github.com/sysbiomed/MONET/blob/master/Final-outputs/Matrix_WHO2021.csv) of the [`sysbiomed/MONET`](https://github.com/sysbiomed/MONET) reclassification repository. |
 | `../../TCGA_PanCan/clinical.csv` | [Liu et al. 2018, *Cell* **173**, 400-416.e11](https://doi.org/10.1016/j.cell.2018.02.052). Curated DSS / DFI / PFI endpoints from the TCGA Pan-Cancer Clinical Data Resource. |
 
 ## Processing
