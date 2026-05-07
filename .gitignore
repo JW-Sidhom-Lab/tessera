@@ -86,6 +86,9 @@ scripts/depmap/depmap_latent_features_panel.pkl
 # inference_api: bundled TCGA CNA reference distribution for quantile
 # normalization (~7 MB; required by the public API at startup).
 !inference_api/cna_sorted.npy
+# inference_api: UCSC liftover chain file for hg38 -> hg19 coordinate
+# conversion (~1.2 MB; required when the user uploads GRCh38 data).
+!inference_api/hg38ToHg19.over.chain.gz
 # Gradio's flagged/cached uploads when the app runs.
 inference_api/flagged/
 inference_api/gradio_cached_examples/
@@ -209,6 +212,10 @@ ipython_config.py
 # AWS access-key downloads (the CSV the IAM Console offers after key creation).
 *_accessKeys.csv
 *_credentials.csv
+# Hugging Face Hub tokens (and similar long-lived API tokens) saved as
+# plaintext files anywhere in the tree.
+hf_token*
+*.token
 .venv
 venv/
 ENV/

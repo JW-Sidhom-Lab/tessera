@@ -851,18 +851,18 @@ class BaseModel(object):
             positions=None,
             refs=None,
             alts=None,
-            context_len=None,
+            context_len=25,
             vaf=None,
             Y=None,
             sample_exp=None,
-            batch_size=32,
+            batch_size=24,
             subsample=None,
             name='dataset',
             is_training=True,
             batch_size_num_variants=None,
-            ref_len=None,
-            alt_len=None,
-            fixed_bag_size=False,
+            ref_len=1,
+            alt_len=1,
+            fixed_bag_size=True,
             set_class_weights=False,
             use_context_cache=False,
             expand_samples_n=1,
@@ -874,9 +874,9 @@ class BaseModel(object):
             cna_segment_means=None,
             cna_lohs=None,
             cna_subsample=None,
-            z_score_cna=True,
+            z_score_cna=False,
             z_score_clip=None,
-            precompute=False,
+            precompute=True,
             precompute_batches=None
     ):
         """
@@ -895,16 +895,18 @@ class BaseModel(object):
             Reference alleles
         alts : array-like
             Alternate alleles
-        context_len : int
-            Length of sequence context to include
+        context_len : int, default=25
+            Length of sequence context to include on each side of the
+            variant. ``25`` matches the TCGA Pan-Cancer pretraining run.
         vaf : array-like, optional
             Variant allele frequencies
         Y : array-like, optional
             Labels for classification
         sample_exp : array-like, optional
             Sample expression data
-        batch_size : int, default=32
-            Number of samples per batch
+        batch_size : int, default=24
+            Number of samples per batch. ``24`` matches the TCGA
+            pretraining run.
         subsample : int, optional
             Maximum number of variants to keep per sample
         name : str, default='dataset'
@@ -913,12 +915,15 @@ class BaseModel(object):
             Whether this is a training dataset (enables shuffling)
         batch_size_num_variants : int, optional
             If provided, batch by number of variants instead of samples
-        ref_len : int, optional
-            Fixed length for reference sequences
-        alt_len : int, optional
-            Fixed length for alternate sequences
-        fixed_bag_size : bool, default=False
-            If True, use a fixed bag size across all batches
+        ref_len : int, default=1
+            Fixed length for reference sequences. ``1`` is correct for
+            single-nucleotide variants (the model was pretrained on
+            SNVs only); raise to e.g. ``10`` for indel-aware datasets.
+        alt_len : int, default=1
+            Fixed length for alternate sequences. See ``ref_len``.
+        fixed_bag_size : bool, default=True
+            If True, use a fixed bag size across all batches. Required
+            for ``jit_compile=True`` training.
         set_class_weights : bool, default=False
             If True, store class weights in the model
         use_context_cache : bool, default=False
@@ -938,8 +943,10 @@ class BaseModel(object):
             Log-fold change values for CNA segments
         cna_subsample : int, optional
             Maximum number of CNA segments to keep per sample
-        z_score_cna : bool, default=True
-            If True, z-score normalize cna_segment_means using dataset mean/std
+        z_score_cna : bool, default=False
+            If True, z-score normalize cna_segment_means using dataset
+            mean/std. ``False`` matches the TCGA pretraining run, which
+            consumed raw log2 ratios.
         z_score_clip : float, default=None
             Clip normalized values to ±z_score_clip std. None disables clipping.
         precompute : bool, default=True

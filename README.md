@@ -75,15 +75,36 @@ bash tessera/ref_genomes/download_ref_genomes.sh
 
 `requirements.txt` covers the foundation-model package, all manuscript-reproduction scripts (pretraining, classifiers, prognostic / predictive-biomarker analyses), and the Gradio inference API. A trimmer subset for deploying only the inference API is at [`inference_api/requirements.txt`](inference_api/requirements.txt).
 
-Weights are hosted on Hugging Face Hub at [huggingface.co/JW-Sidhom-Lab/tessera-foundation](https://huggingface.co/JW-Sidhom-Lab/tessera-foundation) *(coming soon)*. Loading from Python:
+Weights are hosted on Hugging Face Hub at [huggingface.co/JW-Sidhom-Lab/tessera-foundation](https://huggingface.co/JW-Sidhom-Lab/tessera-foundation) under CC-BY-NC-4.0. The shortest path from raw dataframes to feature tensors is the `featurize` one-liner, which downloads weights on first call (cached afterwards), lifts non-hg19 coordinates, builds the dataset, and runs both per-modality feature heads:
 
 ```python
-from tessera.model import TESSERA
-from huggingface_hub import snapshot_download
+import tessera
 
-weights_dir = snapshot_download(repo_id="JW-Sidhom-Lab/tessera-foundation")
-model = TESSERA(name="tessera_v1", model_dir=weights_dir)
+result = tessera.featurize(
+    snv_df=snv_df,                      # columns: Tumor_Sample_Barcode, Chromosome, Start_Position,
+                                        #          Reference_Allele, Tumor_Seq_Allele2, vaf
+    cna_df=cna_df,                      # columns: Tumor_Sample_Barcode, Chromosome, Start, End, Segment_Mean
+    variant="joint_snv_cna_noloh",      # or "joint_snv_cna" for the with-LoH variant
+    from_assembly="GRCh38",             # "GRCh37" / "hg19" is a no-op; otherwise UCSC liftover runs
+)
+
+result.snv_features      # (n_variants, 1169)  per-variant embeddings, row-aligned with result.snv_table
+result.cna_features      # (n_segments, 688)   per-segment embeddings, row-aligned with result.cna_table
+result.liftover_stats    # {"snv": {"n_in", "n_out", "n_dropped"}, "cna": {...}}
 ```
+
+For finer-grained control there are still building blocks:
+
+```python
+from tessera import load_pretrained, lift_snv, lift_cna
+
+model = load_pretrained("joint_snv_cna_noloh")    # download + instantiate, ~3 s cold
+snv_df, _ = lift_snv(snv_df, from_assembly="GRCh38")    # identity if from_assembly=="GRCh37"
+cna_df, _ = lift_cna(cna_df, from_assembly="GRCh38")
+result = model.featurize(snv_df=snv_df, cna_df=cna_df)  # repeat without re-downloading
+```
+
+UCSC chain files are downloaded on first use and cached at `~/.cache/pyliftover/`; offline environments can point the loader at a bundled chain file via the `chain_file=` argument or the `TESSERA_LIFTOVER_CHAIN` environment variable.
 
 ## Reproducing the manuscript
 

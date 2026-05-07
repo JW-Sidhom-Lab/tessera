@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import os
 import pickle
+from dataclasses import dataclass, field
+from typing import Optional
 from pyfaidx import Fasta
 import tensorflow as tf
 import tessera.data.preprocessing
@@ -32,20 +34,41 @@ from keras.config import enable_unsafe_deserialization
 from tessera.base import BaseModel
 from tessera.input_keys import get_input_keys
 
+
+@dataclass
+class FeaturizeResult:
+    """Bundle returned by :meth:`TESSERA.featurize`.
+
+    Row order in ``snv_features`` / ``snv_predictions`` matches
+    ``snv_table`` (the post-liftover SNV input). Likewise for CNA.
+    Modalities the user did not provide come back as ``None``.
+    """
+
+    snv_features: Optional[np.ndarray] = None
+    cna_features: Optional[np.ndarray] = None
+    snv_table: Optional[pd.DataFrame] = None
+    cna_table: Optional[pd.DataFrame] = None
+    snv_predictions: Optional[np.ndarray] = None
+    cna_predictions: Optional[np.ndarray] = None
+    liftover_stats: dict = field(default_factory=dict)
+
+
 class TESSERA(BaseModel):
     def build_model(self,
                     recon_ref = True,
                     nuc_embed_dim=12,
-                    local_conv_dim = [512,256,128],
-                    local_conv_kernel =[25,100,500],
-                    ref_alt_dim = 12,
-                    local_embed_dim = 256,
-                    global_embed_dim = 256,
-                    local_num_heads=6,
-                    local_ff_dim=256,
-                    local_attention_blocks=3,
-                    global_num_heads = 8,
-                    global_ff_dim = 512,
+                    # SNV local-attention branch
+                    local_conv_dim = [256],
+                    local_conv_kernel = [10],
+                    ref_alt_dim = 48,
+                    local_embed_dim = 144,
+                    local_num_heads = 12,
+                    local_ff_dim = 288,
+                    local_attention_blocks = 3,
+                    # SNV global-attention branch
+                    global_embed_dim = 144,
+                    global_num_heads = 12,
+                    global_ff_dim = 288,
                     global_attention_blocks = 3,
                     variant_local_attention = True,
                     variant_self_attention = True,
@@ -54,29 +77,29 @@ class TESSERA(BaseModel):
                     dropout_rate=0.1,
                     attention_l1_factor=0.0,
                     # CNA-specific parameters
-                    cna_embed_dim=64,
-                    cna_num_heads=8,
-                    cna_ff_dim=128,
+                    cna_embed_dim=144,
+                    cna_num_heads=12,
+                    cna_ff_dim=288,
                     cna_self_attention=True,
-                    cna_attention_blocks=3,
+                    cna_attention_blocks=2,
                     use_chr_one_hot=True,
                     chr_embed_dim=16,
                     # CNA dual-task parameters
                     predict_cna_loh=False,
                     # Cross-modal parameters
-                    cross_modal_num_heads=8,
-                    cross_modal_ff_dim=256,
+                    cross_modal_num_heads=12,
+                    cross_modal_ff_dim=288,
                     cross_modal_blocks=0,
-                    cross_attention_explicit=False,
+                    cross_attention_explicit=True,
                     # Training parameters
                     train_on_mutation_loss=True,
                     train_on_cna_loss=True,
                     # Other parameters
                     load_featurization_path=None,
                     freeze_featurization=False,
-                    max_learning_rate=1e-3,
-                    warmup_steps=1000,
-                    min_learning_rate=1e-6,
+                    max_learning_rate=2e-4,
+                    warmup_steps=1200,
+                    min_learning_rate=1e-5,
                     use_cosine_schedule=False,
                     loss_non_zero_only=False,
                     accuracy_non_zero_only=False,
@@ -84,23 +107,33 @@ class TESSERA(BaseModel):
                     log_gradients=False,
                     intermediate_dim_1=512,
                     intermediate_dim_2=128,
-                    per_sample_loss=False,
+                    per_sample_loss=True,
                     # InfoNCE loss parameters
-                    use_infonce_loss=False,
-                    infonce_projection_dim=128,
+                    use_infonce_loss=True,
+                    infonce_projection_dim=256,
                     infonce_temperature=0.1,
-                    infonce_loss_weight=1.0,
+                    infonce_loss_weight=0.1,
                     # Token-bag InfoNCE parameters (independent per modality)
                     use_mut_token_bag_infonce=False,
                     use_cna_token_bag_infonce=False,
                     token_bag_temperature=0.1,
-                    token_bag_loss_weight=1.0,
+                    token_bag_loss_weight=0.01,
                     # Projection MLP architecture
                     infonce_shared_projection=True,
-                    infonce_projection_n_layers=1,
-                    infonce_projection_dropout=None):
+                    infonce_projection_n_layers=2,
+                    infonce_projection_dropout=0.1):
         """
         Build the TESSERA model with specified architecture and training parameters.
+
+        Defaults reproduce the joint SNV+CNA InfoNCE recipe used to train
+        the published TESSERA foundation-model checkpoints (see
+        ``scripts/tcga_pancan_snv_cna/fit_model.py`` and
+        ``model_config_infonce.py`` in the public repository): per-arm
+        attention dim 144 (12 heads x 12), 3 SNV local + 3 SNV global +
+        2 CNA self-attention blocks, an explicit cross-attention block,
+        masked-token reconstruction on both modalities, per-sample
+        InfoNCE alignment with weight 0.1, and a 2e-4 / 1200-step warmup
+        Adam schedule.
 
         Args:
             intermediate_dim_1 (int): Size of first intermediate dense layer for progressive
@@ -800,9 +833,19 @@ class TESSERA(BaseModel):
                 self.model_attn_cna_to_mut.save(os.path.join(self.model_dir, 'attn_cna_to_mut_model.keras'))
                 print("  ✓ Saved CNA→mutation cross-attention model")
 
-    def train_model(self, epochs=10, steps_per_epoch=None,validation_steps=None,early_stopping_patience=5,epochs_min=None,
-                    validation_freq=1, reset_optimizer_epoch=None, reset_learning_rate=None,prefetch=tf.data.AUTOTUNE,steps_per_execution=1,
+    def train_model(self, epochs=1000, steps_per_epoch=None, validation_steps=None,
+                    early_stopping_patience=10, epochs_min=15,
+                    validation_freq=1, reset_optimizer_epoch=None, reset_learning_rate=None,
+                    prefetch=tf.data.AUTOTUNE, steps_per_execution=1,
                     early_stopping_min_relative_delta=0.0):
+        """Train the model.
+
+        Defaults reproduce the published TESSERA pretraining run: up to
+        1000 epochs with patience 10 and a 15-epoch warm-up before
+        early stopping is allowed to fire. Override any of these as
+        needed; the training scripts in ``scripts/`` pass full
+        configurations explicitly via their ``model_config_*.py``
+        files."""
 
         # Determine training and validation data
         if hasattr(self,'train_dataset'):
@@ -2036,6 +2079,150 @@ class TESSERA(BaseModel):
         else:
             # Return only segment_mean predictions
             return all_segment_mean_predictions
+
+    def featurize(
+        self,
+        snv_df: Optional[pd.DataFrame] = None,
+        cna_df: Optional[pd.DataFrame] = None,
+        from_assembly: str = "GRCh37",
+        return_predictions: bool = False,
+        chain_file: Optional[str] = None,
+        name: str = "_featurize_run",
+        context_len: int = 25,
+        batch_size: int = 24,
+    ) -> "FeaturizeResult":
+        """One-shot inference: liftover + dataset + feature extraction.
+
+        Pass dataframes in, get a :class:`FeaturizeResult` back. Hides
+        :meth:`create_sample_dataset`, :meth:`get_variant_features`, and
+        :meth:`get_cna_features`. Coordinates are lifted to GRCh37 first
+        when ``from_assembly`` is anything else (since the model was
+        pretrained on TCGA in hg19); this drops rows that fail to lift.
+
+        Parameters
+        ----------
+        snv_df : pandas.DataFrame, optional
+            Columns: ``Tumor_Sample_Barcode``, ``Chromosome`` (no
+            ``chr`` prefix), ``Start_Position`` (1-based int),
+            ``Reference_Allele``, ``Tumor_Seq_Allele2``. VAF can be
+            supplied as a ``vaf`` column or computed from
+            ``t_alt_count`` + ``t_ref_count``. Single-base substitutions
+            only.
+        cna_df : pandas.DataFrame, optional
+            Columns: ``Tumor_Sample_Barcode``, ``Chromosome``,
+            ``Start``, ``End``, ``Segment_Mean`` (log2 ratio). Optional
+            ``LOH`` column is consumed by the with-LoH variant.
+        from_assembly : str, default ``"GRCh37"``
+            Source assembly. ``"GRCh37"`` / ``"hg19"`` is a no-op;
+            ``"GRCh38"`` / ``"hg38"`` triggers UCSC liftover.
+        return_predictions : bool, default ``False``
+            If True, also run masked-token / segment-mean reconstruction
+            heads and populate ``snv_predictions`` / ``cna_predictions``.
+        chain_file : str, optional
+            Explicit path to a UCSC chain file. Falls through to the
+            ``TESSERA_LIFTOVER_CHAIN`` env var or pyliftover's
+            UCSC auto-download.
+        name : str, default ``"_featurize_run"``
+            Internal dataset attribute name. Override only when calling
+            ``featurize`` from inside another method that already owns
+            an attribute by that name.
+        context_len, batch_size :
+            Forwarded to :meth:`create_sample_dataset`. Defaults match
+            the published pretraining run.
+        """
+        from tessera.data.liftover import lift_snv, lift_cna
+
+        liftover_stats: dict = {}
+
+        if snv_df is not None:
+            snv_df = snv_df.copy()
+            snv_df, snv_lift_stats = lift_snv(
+                snv_df, from_assembly=from_assembly, chain_file=chain_file
+            )
+            liftover_stats["snv"] = snv_lift_stats
+            if "vaf" not in snv_df.columns:
+                if {"t_alt_count", "t_ref_count"}.issubset(snv_df.columns):
+                    depth = snv_df["t_alt_count"] + snv_df["t_ref_count"]
+                    snv_df["vaf"] = np.where(depth > 0, snv_df["t_alt_count"] / depth, 0.0)
+                else:
+                    raise ValueError(
+                        "snv_df must include either a 'vaf' column or both "
+                        "'t_alt_count' and 't_ref_count'."
+                    )
+            if snv_df.empty:
+                raise ValueError(
+                    f"All SNV rows failed to lift from {from_assembly} to GRCh37."
+                )
+            snv_df = snv_df.reset_index(drop=True)
+
+        if cna_df is not None:
+            cna_df = cna_df.copy()
+            cna_df, cna_lift_stats = lift_cna(
+                cna_df, from_assembly=from_assembly, chain_file=chain_file
+            )
+            liftover_stats["cna"] = cna_lift_stats
+            if cna_df.empty:
+                raise ValueError(
+                    f"All CNA segments failed to lift from {from_assembly} to GRCh37."
+                )
+            cna_df = cna_df.reset_index(drop=True)
+
+        if snv_df is None and cna_df is None:
+            raise ValueError("featurize requires at least one of snv_df or cna_df.")
+
+        # Decide whether to surface LoH to the model: only if it's both
+        # present in the input AND supported by the loaded variant.
+        cna_lohs = None
+        if cna_df is not None and "LOH" in cna_df.columns and getattr(self, "use_cna_loh", False):
+            cna_lohs = cna_df["LOH"].astype(bool).values
+
+        ds_kwargs = dict(
+            context_len=context_len,
+            batch_size=batch_size,
+            name=name,
+            is_training=False,
+            fixed_bag_size=True,
+            ref_len=1,
+            alt_len=1,
+            z_score_cna=False,
+            z_score_clip=None,
+        )
+        if snv_df is not None:
+            ds_kwargs.update(
+                sample_ids=snv_df["Tumor_Sample_Barcode"].values,
+                chromosomes=snv_df["Chromosome"].astype(str).values,
+                positions=snv_df["Start_Position"].astype(int).values,
+                refs=snv_df["Reference_Allele"].values,
+                alts=snv_df["Tumor_Seq_Allele2"].values,
+                vaf=snv_df["vaf"].astype(float).values,
+            )
+        if cna_df is not None:
+            ds_kwargs.update(
+                cna_sample_ids=cna_df["Tumor_Sample_Barcode"].values,
+                cna_chromosomes=cna_df["Chromosome"].astype(str).values,
+                cna_starts=cna_df["Start"].astype(int).values,
+                cna_ends=cna_df["End"].astype(int).values,
+                cna_segment_means=cna_df["Segment_Mean"].astype(float).values,
+                cna_lohs=cna_lohs,
+            )
+
+        self.create_sample_dataset(**ds_kwargs)
+
+        result = FeaturizeResult(
+            snv_table=snv_df,
+            cna_table=cna_df,
+            liftover_stats=liftover_stats,
+        )
+        if snv_df is not None:
+            result.snv_features = self.get_variant_features(name, downcast=False)
+            if return_predictions:
+                result.snv_predictions = self.get_variant_probabilities(name)
+        if cna_df is not None:
+            result.cna_features = self.get_cna_features(name, downcast=False)
+            if return_predictions:
+                result.cna_predictions = self.get_cna_predictions(name)
+
+        return result
 
     def _load_model_config_if_needed(self):
         """
