@@ -55,7 +55,7 @@ from sklearn.metrics import (accuracy_score, classification_report, confusion_ma
                              roc_curve, auc, precision_recall_curve, average_precision_score)
 import platform
 import matplotlib
-# Use interactive MacOSX backend on Mac, headless Agg elsewhere (e.g. RunPod/Linux)
+# Use interactive MacOSX backend on Mac, headless Agg elsewhere (e.g. Linux/headless)
 matplotlib.use("MacOSX" if platform.system() == "Darwin" else "Agg", force=True)
 import matplotlib.pyplot as plt
 import seaborn as sns

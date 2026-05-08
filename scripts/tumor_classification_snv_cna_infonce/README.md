@@ -11,7 +11,7 @@ b-c and the disease-specific-survival concordance panels (d-h).
 
 ```
 data/TCGA_PanCan/clinical.csv                            (TCGA CDR survival)
-data/TCGA_PanCan/glioma_who2021_metadata.csv             (WHO 2021 glioma labels)
+data/prognostic/glioma/glioma_clinical_metadata.csv      (WHO 2021 glioma labels)
 scripts/tcga_pancan_snv_cna/multimodal_features/         (joint InfoNCE features)
                        │
                        ▼
@@ -37,7 +37,7 @@ classified independently:
 
 | Variant | Features | Output dirs | Manuscript role |
 |---|---|---|---|
-| **LOH** (default) | `TCGA_SNV_CNA_InfoNCE_per_sample_loss_multimodal_features.pkl` | `models_macro/`, `plots/` | **Figure 4 b-c headline** (macro-AUC 0.987, micro-AUC 0.991, macro-AP 0.893, micro-AP 0.908) |
+| **LOH** (default) | `TCGA_SNV_CNA_InfoNCE_per_sample_loss_multimodal_features.pkl` | `models_macro/`, `plots/` | Manuscript Figure 4 b-c (multimodal headline classifier) |
 | NoLOH | `TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH_multimodal_features.pkl` | `models_macro_noloh/`, `plots_noloh/` | Ablation; corresponds to the noLOH joint pretraining variant |
 
 Default training mode is **macro-fold nested CV** (5 outer / 10 inner)

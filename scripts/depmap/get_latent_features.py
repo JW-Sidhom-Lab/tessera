@@ -19,7 +19,7 @@ Output:
         data_snv            SNV metadata (same row count as variant_features)
         data_cna            CNA metadata (same row count as cna_features)
 
-Run on RunPod (Keras model inference is too slow on Mac).
+Inference is GPU-bound; expect minutes on a single GPU and hours on CPU.
 """
 
 import pickle
@@ -37,7 +37,10 @@ CONTEXT_LEN = 25
 BATCH_SIZE = 24
 
 # Path to the trained multi-modal InfoNCE-noLOH model (same as MSK-CHORD).
-MODEL_DIR = '../tcga_pancan_snv_cna/models/TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH'
+MODEL_DIR = os.environ.get(
+    "MODEL_DIR",
+    "../tcga_pancan_snv_cna/models/TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH",
+)
 
 # DepMap MSK-IMPACT505 panel-restricted inputs.
 SNV_CSV_PATH = '../data/depmap/snv_panel.csv'
@@ -60,47 +63,11 @@ TCGA_CNA_DATA_PATHS   = ['../data/tcga/train_data_cna.csv',
                          '../data/tcga/valid_data_cna.csv']
 
 
-def _load_tcga_segment_mean(data_paths):
-    vals = []
-    for p in data_paths:
-        df = pd.read_csv(p, usecols=['Segment_Mean'])
-        vals.append(df['Segment_Mean'].astype(float).values)
-    return np.concatenate(vals)
-
-
-def get_tcga_cna_stats(stats_path, data_paths):
-    if os.path.exists(stats_path):
-        with open(stats_path) as f:
-            s = json.load(f)
-        return float(s['mean']), float(s['std'])
-    print(f"Computing TCGA CNA stats (cache miss: {stats_path})")
-    arr = _load_tcga_segment_mean(data_paths)
-    mean, std = float(arr.mean()), float(arr.std())
-    os.makedirs(os.path.dirname(stats_path), exist_ok=True)
-    with open(stats_path, 'w') as f:
-        json.dump({'mean': mean, 'std': std, 'n_segments': int(arr.size)}, f, indent=2)
-    print(f"  Cached to {stats_path}: mean={mean:.4f} std={std:.4f} (n={arr.size:,})")
-    return mean, std
-
-
-def get_tcga_cna_sorted(sorted_path, data_paths):
-    if os.path.exists(sorted_path):
-        return np.load(sorted_path)
-    print(f"Computing sorted TCGA CNA array (cache miss: {sorted_path})")
-    arr = np.sort(_load_tcga_segment_mean(data_paths)).astype(np.float32)
-    os.makedirs(os.path.dirname(sorted_path), exist_ok=True)
-    np.save(sorted_path, arr)
-    print(f"  Cached to {sorted_path}: n={arr.size:,}")
-    return arr
-
-
-def quantile_normalize_to_tcga(vals, tcga_sorted):
-    from scipy.stats import rankdata
-    n = len(vals)
-    ranks = rankdata(vals, method='average')
-    q     = (ranks - 0.5) / n
-    tcga_q = np.linspace(0.0, 1.0, len(tcga_sorted))
-    return np.interp(q, tcga_q, tcga_sorted)
+from tessera.data.preprocessing import (
+    get_tcga_cna_stats,
+    get_tcga_cna_sorted,
+    quantile_normalize_to_tcga,
+)
 
 
 print("=" * 80)

@@ -44,6 +44,11 @@ python create_training_data.py \
 |---|---|---|
 | `GENIE.csv` | All MAF columns + `vaf` + sample-level clinical (`SAMPLE_ID` -> `Tumor_Sample_Barcode`, `ONCOTREE_CODE`, `SEQ_ASSAY_ID`, `CANCER_TYPE`, etc.) | Downstream SNV-validation scripts |
 
+## Next step
+
+After producing `GENIE.csv`, run `scripts/data/genie/` to build the SNV
+validation table consumed by `scripts/genie_snv/`.
+
 ## Citations
 
 Cite the AACR Project GENIE Consortium when using this data:

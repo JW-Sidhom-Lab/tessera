@@ -7,7 +7,7 @@ scripts/data/msk_chord/):
     ../data/msk_chord/snv.csv              (create_snv.py)
     ../data/msk_chord/cna_panel_filtered.csv
         OR ../data/msk_chord/cna.csv       (selected via CNA_DATA_SOURCE below)
-    models/TCGA_SNV_CNA_InfoNCE_noLOH/best_model.keras   (sync from S3)
+    models/TCGA_SNV_CNA_InfoNCE_noLOH/best_model.keras   (produced by scripts/tcga_pancan_snv_cna/fit_model.py)
 
 Output:
     msk_chord_latent_features_<CNA_DATA_SOURCE>.pkl - dict with:
@@ -18,7 +18,6 @@ Output:
 """
 
 import pickle
-import sys
 import os
 import json
 import pandas as pd
@@ -32,7 +31,10 @@ BATCH_SIZE = 24
 
 # Path to the trained multi-modal InfoNCE-noLOH model (best_model.keras lives here).
 # Must be the same directory the model was saved to by fit_model.py.
-MODEL_DIR = '../tcga_pancan_snv_cna/models/TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH'
+MODEL_DIR = os.environ.get(
+    "MODEL_DIR",
+    "../tcga_pancan_snv_cna/models/TCGA_SNV_CNA_InfoNCE_per_sample_loss_noLOH",
+)
 
 # CNA input source.  Options:
 #   'panel_filtered' - cna_panel_filtered.csv  (per-gene cross-joined, ~11.7M rows;
@@ -62,62 +64,11 @@ TCGA_CNA_DATA_PATHS   = ['../data/tcga/train_data_cna.csv',
                          '../data/tcga/valid_data_cna.csv']
 
 
-def _load_tcga_segment_mean(data_paths):
-    """Load + concat TCGA Segment_Mean across the given CSVs."""
-    vals = []
-    for p in data_paths:
-        df = pd.read_csv(p, usecols=['Segment_Mean'])
-        vals.append(df['Segment_Mean'].astype(float).values)
-    return np.concatenate(vals)
-
-
-def get_tcga_cna_stats(stats_path, data_paths):
-    """
-    Return (mean, std) of TCGA CNA Segment_Mean across all segments.
-    Loads from cache if present; otherwise computes and writes cache.
-    """
-    if os.path.exists(stats_path):
-        with open(stats_path) as f:
-            s = json.load(f)
-        return float(s['mean']), float(s['std'])
-
-    print(f"Computing TCGA CNA stats (cache miss: {stats_path})")
-    arr = _load_tcga_segment_mean(data_paths)
-    mean, std = float(arr.mean()), float(arr.std())
-    os.makedirs(os.path.dirname(stats_path), exist_ok=True)
-    with open(stats_path, 'w') as f:
-        json.dump({'mean': mean, 'std': std, 'n_segments': int(arr.size)}, f, indent=2)
-    print(f"  Cached to {stats_path}: mean={mean:.4f} std={std:.4f} (n={arr.size:,})")
-    return mean, std
-
-
-def get_tcga_cna_sorted(sorted_path, data_paths):
-    """
-    Return sorted TCGA CNA Segment_Mean array (for quantile normalization).
-    Loads from .npy cache if present; otherwise computes + writes cache.
-    """
-    if os.path.exists(sorted_path):
-        return np.load(sorted_path)
-    print(f"Computing sorted TCGA CNA array (cache miss: {sorted_path})")
-    arr = np.sort(_load_tcga_segment_mean(data_paths)).astype(np.float32)
-    os.makedirs(os.path.dirname(sorted_path), exist_ok=True)
-    np.save(sorted_path, arr)
-    print(f"  Cached to {sorted_path}: n={arr.size:,}")
-    return arr
-
-
-def quantile_normalize_to_tcga(vals, tcga_sorted):
-    """
-    Map each value in `vals` to the TCGA value at the same percentile rank.
-    Ties averaged via rankdata so that duplicate MSK values (e.g. many zeros)
-    collapse to a single TCGA quantile instead of spreading across a range.
-    """
-    from scipy.stats import rankdata
-    n = len(vals)
-    ranks = rankdata(vals, method='average')          # 1..n, ties averaged
-    q     = (ranks - 0.5) / n                         # midpoint convention, (0, 1)
-    tcga_q = np.linspace(0.0, 1.0, len(tcga_sorted))
-    return np.interp(q, tcga_q, tcga_sorted)
+from tessera.data.preprocessing import (
+    get_tcga_cna_stats,
+    get_tcga_cna_sorted,
+    quantile_normalize_to_tcga,
+)
 
 print("=" * 80)
 print("Extracting Latent Features from MSK-CHORD Data")

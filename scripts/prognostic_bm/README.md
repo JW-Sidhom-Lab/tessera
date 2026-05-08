@@ -16,11 +16,6 @@ per-sample cache that drives the published Figure 5 panels.
 | `brca`   | OncotypeDX RS tertile  | DSS, 5y | Fig 5 c-j |
 | `prad`   | Decipher tertile       | PFI.1, 5y | Fig 5 k-r |
 
-UCEC (Fig 5 b) is not yet wired into this directory: its clinical
-metadata builder hasn't been migrated into `data/prognostic/`. Adding
-`configs/ucec.py` + a `data/prognostic/ucec/` build is the only thing
-needed.
-
 ## Pipeline
 
 ```
@@ -90,7 +85,7 @@ python joint_cox.py
 |---|---|
 | `analysis_results_<cohort>_infonce_per_sample_loss/data/fig5_cache.csv` | Per-sample UMAP coords, Risk_Score, Risk_Group, Subtype, survival. Source data for Fig. 5 panels. |
 | `analysis_results_<cohort>_infonce_per_sample_loss/plots/` | Per-cohort UMAP overlays + KM panels. |
-| `analysis_results_brca_infonce_per_sample_loss/joint_cox_continuous_brca_prad.txt` | The manuscript Figure 5 c-j and Figure 5 k-r joint-Cox numbers (HR per +1 SD, 95% CI, P, joint C, Spearman ρ). |
+| `analysis_results_brca_infonce_per_sample_loss/joint_cox_continuous_brca_prad.txt` | Per-cohort joint-Cox text output (TESSERA risk score vs the per-cohort transcriptomic comparator). |
 
 All output directories are gitignored.
 

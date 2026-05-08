@@ -16,8 +16,8 @@ manuscript Figure 6 (a-n) and Supplementary Figures 10, 11, 12.
 
 Directory references in the scripts are repo-relative
 (`../../data/msk_chord_2024/`, `../tcga_pancan_snv_cna/models/`), so as
-long as the layout above holds the paths resolve unchanged from the
-research workspace.
+long as the layout above holds the paths resolve unchanged from a
+fresh clone.
 
 ## Pipeline
 

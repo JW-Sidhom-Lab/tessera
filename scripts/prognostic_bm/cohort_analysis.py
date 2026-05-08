@@ -9,7 +9,7 @@ metadata CSV, then performs:
   4. Polynomial-Cox trajectory analysis on UMAP coordinates
   5. Risk stratification via continuous Cox risk scores
 
-Must be run from inside `methods/prognostic_bm/` because feature and data
+Must be run from inside `scripts/prognostic_bm/` because feature and data
 paths are relative. See README.md for configuration details.
 
 Features are loaded either from the raw pretrained pkls produced by
@@ -59,7 +59,7 @@ from scipy import stats
 import umap
 
 import matplotlib
-# Use interactive MacOSX backend on Mac, headless Agg elsewhere (e.g. RunPod/Linux)
+# Use interactive MacOSX backend on Mac, headless Agg elsewhere (e.g. Linux/headless)
 matplotlib.use("MacOSX" if platform.system() == "Darwin" else "Agg", force=True)
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap

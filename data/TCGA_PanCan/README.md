@@ -66,3 +66,8 @@ as `purity * Modal_Total_CN + (1 - purity) * 2`, then expressed as
 
 `create_training_data.py` loads the full 3.5 GB MC3 MAF into pandas memory; peak
 usage is around 35-40 GB. `create_training_data_cna.py` is lighter (~2-4 GB).
+
+## Next step
+
+After producing `TCGA.csv` and `TCGA_CNA.csv`, run `scripts/data/tcga/` to
+build the train / valid splits the model fits against.

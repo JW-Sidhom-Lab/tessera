@@ -25,7 +25,7 @@ Files consumed by this pipeline:
 | `data_mutations.txt` | 68 MB | `prepare_data.py` |
 | `data_timeline_treatment.txt` | 6.8 MB | `prepare_data.py`, cohort scripts |
 | `data_timeline_progression.txt` | 24 MB | cohort scripts (`FIRST_PROGRESSION_DATE`) |
-| `data_cna_hg19.seg` | 63 MB | downstream CNA pipeline (in `methods/data/msk_chord/`) |
+| `data_cna_hg19.seg` | 63 MB | downstream CNA pipeline (in `scripts/data/msk_chord/`) |
 | `data_gene_panel_matrix.txt` | 1.1 MB | downstream CNA pipeline (sample-to-panel mapping) |
 
 Place all files in this directory. The MSK-CHORD `LICENSE` is included in the
@@ -40,10 +40,10 @@ data_clinical_*.txt ─┼──→ prepare_data.py ──→ msk_chord_2024.csv
 data_timeline_*      │                        msk_chord_2024_tx.csv (per-regimen timeline)
                      │
                      ├──→ create_ground_truth_crc_folfox_folfiri_stage4_ttntd.py
-                     │       → GROUND_TRUTH_CRC_FOLFOX_FOLFIRI_STAGE4_TTNTD.csv  (Fig. 6 b–e)
+                     │       → GROUND_TRUTH_CRC_FOLFOX_FOLFIRI_STAGE4_TTNTD.csv  (Fig. 6 b-e)
                      │
                      └──→ create_ground_truth_pancreatic_gemabra_folfirinox_stage4_first_line_ttntd.py
-                             → GROUND_TRUTH_PANCREATIC_GEMABRA_FOLFIRINOX_STAGE4_FIRST_LINE_TTNTD.csv  (Fig. 6 f–i)
+                             → GROUND_TRUTH_PANCREATIC_GEMABRA_FOLFIRINOX_STAGE4_FIRST_LINE_TTNTD.csv  (Fig. 6 f-i)
 ```
 
 `cohort_utils.py` is a shared module used by the two cohort scripts (TTNTD
@@ -62,12 +62,12 @@ python prepare_data.py \
     --variant-output msk_chord_2024.csv \
     --treatment-output msk_chord_2024_tx.csv
 
-# Stage 2: CRC FOLFOX/FOLFIRI cohort (Figure 6 b–e; ~1 minute)
+# Stage 2: CRC FOLFOX/FOLFIRI cohort (Figure 6 b-e; ~1 minute)
 python create_ground_truth_crc_folfox_folfiri_stage4_ttntd.py \
     --base-dir . \
     --output GROUND_TRUTH_CRC_FOLFOX_FOLFIRI_STAGE4_TTNTD.csv
 
-# Stage 2: PDAC FOLFIRINOX/Gem+nab cohort (Figure 6 f–i; ~1 minute)
+# Stage 2: PDAC FOLFIRINOX/Gem+nab cohort (Figure 6 f-i; ~1 minute)
 python create_ground_truth_pancreatic_gemabra_folfirinox_stage4_first_line_ttntd.py \
     --base-dir . \
     --output GROUND_TRUTH_PANCREATIC_GEMABRA_FOLFIRINOX_STAGE4_FIRST_LINE_TTNTD.csv
@@ -78,12 +78,12 @@ release files, not on each other or on `prepare_data.py`'s outputs.
 
 ## Outputs
 
-| File | Rows (manuscript) | Used by |
+| File | Description | Used by |
 |---|---|---|
-| `msk_chord_2024.csv` | ~1.5 M variants | downstream SNV pipeline |
-| `msk_chord_2024_tx.csv` | ~30 K regimen rows | predictive-biomarker analyses |
-| `GROUND_TRUTH_CRC_FOLFOX_FOLFIRI_STAGE4_TTNTD.csv` | 1,699 regimen instances (1,452 after PFS filter applied downstream) | Fig. 6 b–e |
-| `GROUND_TRUTH_PANCREATIC_GEMABRA_FOLFIRINOX_STAGE4_FIRST_LINE_TTNTD.csv` | 889 (771 after PFS filter) | Fig. 6 f–i |
+| `msk_chord_2024.csv` | per-variant table joined to clinical / sample metadata | downstream SNV pipeline |
+| `msk_chord_2024_tx.csv` | one row per (patient, regimen-start-date) treatment instance | predictive-biomarker analyses |
+| `GROUND_TRUTH_CRC_FOLFOX_FOLFIRI_STAGE4_TTNTD.csv` | one row per qualifying CRC FOLFOX/FOLFIRI regimen instance (downstream PFS filter applies in `scripts/predictive_bm/`) | Fig. 6 b-e |
+| `GROUND_TRUTH_PANCREATIC_GEMABRA_FOLFIRINOX_STAGE4_FIRST_LINE_TTNTD.csv` | one row per qualifying pancreatic Gem/Abrx vs FOLFIRINOX regimen instance | Fig. 6 f-i |
 
 ## Cohort definitions
 
@@ -105,6 +105,12 @@ The two ground-truth scripts use the TTNTD framework from Jee et al. (2024):
 - **Response label.** `TTNTD_RESPONSE_LABEL = 1` if `TTNTD > 180 days`, else 0.
   Censored patients with `treatment_duration ≥ 180 days` who are alive get a 1
   (sustained-on-therapy responder).
+
+## Next step
+
+After producing the MSK-CHORD outputs, run `scripts/data/msk_chord/` to
+build the per-sample SNV / CNA tables consumed by the predictive-biomarker
+analyses in `scripts/predictive_bm/`.
 
 ## Citation
 

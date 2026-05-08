@@ -11,10 +11,9 @@ than their actual class. The glioma GBM/LGG boundary is a concrete,
 literature-supported instance, verifiable with the 2021 WHO
 reclassification of IDH-mutant astrocytomas out of GBM.
 
-Produces per-panel output mirroring
-`methods/predictive_bm/crc_folfox_folfiri_final/causal_inference_results_final/paper_figures/`:
-one folder per panel with `panel.{png,pdf}` + stats CSVs, plus a
-top-level `MANIFEST.csv` and `summary.json`.
+Produces per-panel output: one folder per panel with
+`panel.{png,pdf}` + stats CSVs, plus a top-level `MANIFEST.csv` and
+`summary.json`.
 
 Run once:
     python tcga_concordance_paper_figures.py
@@ -25,7 +24,7 @@ Inputs
       OOF predictions from the 23-class ensemble (macro-fold CV).
   ../data/tcga/clinical.csv
       Curated TCGA clinical + survival fields. DSS_cr / DSS.time.cr.
-  ../prognostic_bm/clinical_metadata/glioma_clinical_metadata.csv
+  ../../data/prognostic/glioma/glioma_clinical_metadata.csv
       WHO 2021 reclassification labels for gliomas.
 
 Terminology
@@ -278,9 +277,9 @@ def load_merged() -> pd.DataFrame:
     df['time_months'] = df['time_days'] / 30.44
     df['event']       = df['event'].astype(int)
 
-    # 60-month (5-year) administrative censoring, matching the convention
-    # in methods/predictive_bm/crc_folfox_folfiri_final and the PDAC
-    # panels. Patients still at risk past MAX_MONTHS are censored at
+    # 60-month (5-year) administrative censoring, matching the
+    # convention used in the CRC and PDAC predictive-biomarker panels.
+    # Patients still at risk past MAX_MONTHS are censored at
     # MAX_MONTHS with event=0.
     n_censored = int((df['time_months'] > MAX_MONTHS).sum())
     print(f"  {n_censored:,} samples administratively censored at "

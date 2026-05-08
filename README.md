@@ -15,39 +15,28 @@ This repository contains the reference implementation, the pretrained-weights po
 
 ## Quick start
 
-The fastest way to use TESSERA is via the public inference API on Hugging Face; no local installation required. Upload SNV and/or CNA data, get back per-variant predictions and embeddings:
-
-🔗 **Inference API**: [huggingface.co/spaces/JW-Sidhom-Lab/tessera](https://huggingface.co/spaces/JW-Sidhom-Lab/tessera) *(coming soon)*
-
-From Python (`pip install gradio_client`):
-
-```python
-import time
-from gradio_client import Client, handle_file
-
-client = Client("JW-Sidhom-Lab/tessera")        # the public Spaces URL also works
-
-# Submit returns (status_html, job_id) immediately; inference runs async
-_, job_id = client.predict(
-    handle_file("snv.csv"),         # SNV CSV; or None
-    handle_file("cna.csv"),         # CNA CSV; or None. At least one required.
-    True,                           # apply TCGA quantile normalization to CNA
-    "you@example.com",              # email address for the download link
-    "GRCh37",                       # genome assembly: "GRCh37" or "GRCh38"
-    api_name="/submit",
-)
-
-# Poll for completion (the same URL also gets emailed when the job finishes)
-while True:
-    status = client.predict(job_id, api_name="/status")
-    if status["status"] in ("done", "failed"):
-        break
-    time.sleep(10)
-
-print(status["url"])    # 24h pre-signed S3 download URL with the result ZIP
+```bash
+pip install tessera-foundation
 ```
 
-The API serves the foundation-model outputs only (per-token embeddings + per-token reconstruction predictions, returned as `.npy` files inside the result ZIP). Downstream task heads (tumour-type classifier, treatment-effect score) are available on request under a Data Use Agreement.
+```python
+import tessera, pandas as pd
+
+snv_df = pd.read_csv("snv.csv")    # cols: Tumor_Sample_Barcode, Chromosome,
+                                   # Start_Position, Reference_Allele,
+                                   # Tumor_Seq_Allele2, vaf
+cna_df = pd.read_csv("cna.csv")    # cols: Tumor_Sample_Barcode, Chromosome,
+                                   # Start, End, Segment_Mean
+
+result = tessera.featurize(
+    snv_df=snv_df, cna_df=cna_df,
+    variant="joint_snv_cna_noloh",   # or "joint_snv_cna" (with-LoH)
+    from_assembly="GRCh37",          # "GRCh38" triggers UCSC liftover
+)
+
+result.snv_features      # (n_variants, 1169)  per-variant embeddings
+result.cna_features      # (n_segments, 688)   per-segment embeddings
+```
 
 CSV column conventions:
 

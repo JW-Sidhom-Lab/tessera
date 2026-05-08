@@ -37,7 +37,4 @@ Defaults assume the upstream input sits at
 
 ## Note on CNA
 
-GENIE CNA segments are not processed in this directory. CNA cross-platform
-validation in the manuscript uses MSK-CHORD (`scripts/data/msk_chord/`), so
-the original `methods/data/genie/create_cna.py` and `subdivide_cna.py` were
-not migrated.
+CNA cross-platform validation uses MSK-CHORD; see `scripts/data/msk_chord/`.

@@ -6,10 +6,15 @@ normalisation for CNA segments, sample-level bagging, and helpers for converting
 attention attributions into pandas DataFrames downstream of inference.
 """
 
-from typing import Tuple, Dict, Any, Optional
+from typing import Tuple, Dict, Any, Optional, Sequence, Union
+import json
+import os
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import tensorflow as tf
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, rankdata
 
 
 def create_dataset_indices(
@@ -747,3 +752,84 @@ def encode_cna_segment(chromosome, start, end, chr_encoder, chr_sizes=None):
     length_log = np.log10(length + 1)  # Add 1 to avoid log(0)
 
     return chr_encoded, start_norm, end_norm, length_log
+
+
+# ----------------------------------------------------------------------------
+# CNA quantile normalisation against the TCGA training distribution.
+#
+# Panel-sequencing or cell-line CNA segments cover a different copy-number
+# distribution than the whole-exome TCGA cohort the model was pretrained on.
+# Mapping a user's segment-mean values onto TCGA-distribution quantiles
+# reconciles the shift before inference.
+# ----------------------------------------------------------------------------
+
+
+def _load_tcga_segment_mean(data_paths: Sequence[Union[str, Path]]) -> np.ndarray:
+    """Concatenate the ``Segment_Mean`` column from one or more TCGA CNA CSVs."""
+    vals = []
+    for p in data_paths:
+        df = pd.read_csv(p, usecols=["Segment_Mean"])
+        vals.append(df["Segment_Mean"].astype(float).values)
+    return np.concatenate(vals)
+
+
+def get_tcga_cna_stats(stats_path: Union[str, Path],
+                       data_paths: Sequence[Union[str, Path]]) -> Tuple[float, float]:
+    """Return (mean, std) of the TCGA CNA Segment_Mean reference distribution.
+
+    Caches the result to ``stats_path`` (JSON) so subsequent calls skip the
+    full re-read of the underlying CSVs.
+    """
+    if os.path.exists(stats_path):
+        with open(stats_path) as f:
+            s = json.load(f)
+        return float(s["mean"]), float(s["std"])
+    print(f"Computing TCGA CNA stats (cache miss: {stats_path})", flush=True)
+    arr = _load_tcga_segment_mean(data_paths)
+    mean, std = float(arr.mean()), float(arr.std())
+    os.makedirs(os.path.dirname(stats_path), exist_ok=True)
+    with open(stats_path, "w") as f:
+        json.dump({"mean": mean, "std": std, "n_segments": int(arr.size)}, f, indent=2)
+    print(f"  Cached to {stats_path}: mean={mean:.4f} std={std:.4f} (n={arr.size:,})", flush=True)
+    return mean, std
+
+
+def get_tcga_cna_sorted(sorted_path: Union[str, Path],
+                        data_paths: Sequence[Union[str, Path]]) -> np.ndarray:
+    """Return a sorted float32 array of TCGA Segment_Mean values.
+
+    The sorted array is the lookup table used by :func:`quantile_normalize_to_tcga`.
+    Cached to ``sorted_path`` (npy) on first build; subsequent calls just load.
+    """
+    if os.path.exists(sorted_path):
+        return np.load(sorted_path)
+    print(f"Computing sorted TCGA CNA array (cache miss: {sorted_path})", flush=True)
+    arr = np.sort(_load_tcga_segment_mean(data_paths)).astype(np.float32)
+    os.makedirs(os.path.dirname(sorted_path), exist_ok=True)
+    np.save(sorted_path, arr)
+    print(f"  Cached to {sorted_path}: n={arr.size:,}", flush=True)
+    return arr
+
+
+def quantile_normalize_to_tcga(vals: np.ndarray, tcga_sorted: np.ndarray) -> np.ndarray:
+    """Map ``vals`` onto the empirical quantiles of the TCGA reference.
+
+    For each input value, finds its rank-based quantile, then looks up the
+    corresponding value in the sorted TCGA reference. This collapses any
+    panel-sequencing / cell-line distribution shift onto the TCGA
+    pretraining distribution. Use with the array returned by
+    :func:`get_tcga_cna_sorted`.
+
+    Args:
+        vals: 1-D array of user-provided Segment_Mean values.
+        tcga_sorted: 1-D sorted array of TCGA reference Segment_Means.
+
+    Returns:
+        1-D float array, same length as ``vals``, whose values lie in the
+        TCGA reference distribution.
+    """
+    n = len(vals)
+    ranks = rankdata(vals, method="average")
+    q = (ranks - 0.5) / n
+    tcga_q = np.linspace(0.0, 1.0, len(tcga_sorted))
+    return np.interp(q, tcga_q, tcga_sorted)

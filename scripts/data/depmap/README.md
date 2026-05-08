@@ -74,7 +74,7 @@ system; no additional liftover is required at inference time.
 - Solid-tumour lineages only (hematologic excluded via `OncotreeLineage`).
 - 1,475 cell lines have both SNV and CNA modalities after the panel filter.
 - 83 are colorectal adenocarcinoma; 44 of those carry both oxaliplatin and
-  SN-38 AUCs in CTRPv2 — the n=44 cohort plotted in Figure 6 n.
+  SN-38 AUCs in CTRPv2; the n=44 cohort plotted in Figure 6 n.
 
 ## Why MSK-IMPACT505
 

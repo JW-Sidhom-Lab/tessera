@@ -4,14 +4,14 @@ Reads the cBioPortal-format MSK-CHORD 2024 release and produces two CSVs:
 
 1. ``msk_chord_2024.csv`` -- the somatic mutations table joined to sample-level
    and patient-level clinical metadata. This is the table read by
-   ``methods/data/msk_chord/create_snv.py`` to build the per-sample SNV table
+   ``scripts/data/msk_chord/create_snv.py`` to build the per-sample SNV table
    for TESSERA inference.
 
 2. ``msk_chord_2024_tx.csv`` -- the treatment-regimen timeline collapsed to one
    row per (patient, regimen-start-date), with ``line_of_therapy`` numbered
    per patient and the patient's ``PRIOR_MED_TO_MSK`` flag joined back in.
    This table is consumed by the predictive-biomarker scripts in
-   ``methods/predictive_bm/`` for cohort assembly.
+   ``scripts/predictive_bm/`` for cohort assembly.
 
 Inputs
 ------
