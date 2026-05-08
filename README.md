@@ -30,30 +30,49 @@ cna_df = pd.read_csv("cna.csv")    # cols: Tumor_Sample_Barcode, Chromosome,
 
 result = tessera.featurize(
     snv_df=snv_df, cna_df=cna_df,
-    variant="joint_snv_cna_noloh",   # or "joint_snv_cna" (with-LoH)
-    from_assembly="GRCh37",          # "GRCh38" triggers UCSC liftover
+    variant="joint_snv_cna_noloh",        # or "joint_snv_cna" (with-LoH)
+    from_assembly="GRCh37",               # "GRCh38" triggers UCSC liftover
+    quantile_normalize_to_tcga=False,     # set True for panel/cell-line data
 )
 
 result.snv_features      # (n_variants, 1169)  per-variant embeddings
 result.cna_features      # (n_segments, 688)   per-segment embeddings
 ```
 
-CSV column conventions:
+First call downloads the requested model variant from Hugging Face Hub (~185 MB) and, on first SNV call, the GRCh37 reference genome (~3 GB); both are cached locally.
+
+**CSV column conventions:**
 
 - **SNV**: `Tumor_Sample_Barcode`, `Chromosome` (no `chr` prefix), `Start_Position`, `Reference_Allele`, `Tumor_Seq_Allele2`, plus either `vaf` or both `t_alt_count` + `t_ref_count`. Single-base substitutions only.
-- **CNA**: `Tumor_Sample_Barcode`, `Chromosome`, `Start`, `End`, `Segment_Mean` (log2 ratio); optional `LOH` column triggers the with-LoH model variant.
+- **CNA**: `Tumor_Sample_Barcode`, `Chromosome`, `Start`, `End`, `Segment_Mean` (log2 ratio); optional `LOH` column triggers the with-LoH variant.
 
-## Local installation
+### When to set `quantile_normalize_to_tcga=True`
 
-For users who want to run inference offline or integrate TESSERA into a custom pipeline:
+TESSERA was pretrained on TCGA whole-exome ABSOLUTE Segment_Means (median 0.000, IQR [0, +0.51]). Inputs whose log2-ratio distribution differs should be rank-mapped onto the TCGA reference before inference.
 
-```bash
-pip install tessera-foundation
+| Input type | Setting | Why |
+|---|---|---|
+| TCGA-like whole-exome ABSOLUTE | `False` (default) | Same distribution the model was pretrained on. |
+| Panel sequencing (MSK-IMPACT, MSK-CHORD, GENIE) | **`True`** | Panel coverage compresses log2-ratios toward zero (KS = 0.38 vs TCGA). |
+| Cell-line data (DepMap, CCLE) | **`True`** | Raw log2-ratios are right-shifted; DepMap median ≈ +1.0 vs TCGA's 0.0 (KS = 0.72). |
+
+The bundled reference (`tessera/data/cna_sorted.npy`, 7 MB, 1.8 M segments) is loaded automatically when `True`. The helper `tessera.data.preprocessing.quantile_normalize_to_tcga` is also exposed if you'd rather pre-normalize.
+
+### Lower-level building blocks
+
+```python
+from tessera import load_pretrained, lift_snv, lift_cna
+
+model = load_pretrained("joint_snv_cna_noloh")          # download + instantiate
+snv_df, _ = lift_snv(snv_df, from_assembly="GRCh38")    # identity for GRCh37
+result = model.featurize(snv_df=snv_df, cna_df=cna_df)  # reuse without re-downloading
 ```
 
-The first call to `tessera.featurize` (below) downloads the reference genome (~3 GB) and the requested model weights from Hugging Face Hub on demand and caches both, so you don't need a separate setup step.
+UCSC chain files for liftover are downloaded on first use to `~/.cache/pyliftover/`; offline environments can supply a local file via `chain_file=` or the `TESSERA_LIFTOVER_CHAIN` env var.
 
-To reproduce the manuscript or retrain from scratch, clone the repo for the analysis scripts and the FASTA bootstrap helper:
+## Reproducing the manuscript
+
+For training, downstream analyses, and figure generation, clone the repo:
 
 ```bash
 git clone https://github.com/JW-Sidhom-Lab/tessera.git
@@ -63,59 +82,13 @@ pip install -r requirements.txt
 bash tessera/ref_genomes/download_ref_genomes.sh
 ```
 
-`requirements.txt` covers the foundation-model package, all manuscript-reproduction scripts (pretraining, classifiers, prognostic / predictive-biomarker analyses), and the Gradio inference API. A trimmer subset for deploying only the inference API is at [`inference_api/requirements.txt`](inference_api/requirements.txt).
-
-Weights are hosted on Hugging Face Hub at [huggingface.co/JW-Sidhom-Lab/tessera-foundation](https://huggingface.co/JW-Sidhom-Lab/tessera-foundation) under CC-BY-NC-4.0. The shortest path from raw dataframes to feature tensors is the `featurize` one-liner, which downloads weights on first call (cached afterwards), lifts non-hg19 coordinates, builds the dataset, and runs both per-modality feature heads:
-
-```python
-import tessera
-
-result = tessera.featurize(
-    snv_df=snv_df,                      # columns: Tumor_Sample_Barcode, Chromosome, Start_Position,
-                                        #          Reference_Allele, Tumor_Seq_Allele2, vaf
-    cna_df=cna_df,                      # columns: Tumor_Sample_Barcode, Chromosome, Start, End, Segment_Mean
-    variant="joint_snv_cna_noloh",      # or "joint_snv_cna" for the with-LoH variant
-    from_assembly="GRCh38",             # "GRCh37" / "hg19" is a no-op; otherwise UCSC liftover runs
-)
-
-result.snv_features      # (n_variants, 1169)  per-variant embeddings, row-aligned with result.snv_table
-result.cna_features      # (n_segments, 688)   per-segment embeddings, row-aligned with result.cna_table
-result.liftover_stats    # {"snv": {"n_in", "n_out", "n_dropped"}, "cna": {...}}
-```
-
-For finer-grained control there are still building blocks:
-
-```python
-from tessera import load_pretrained, lift_snv, lift_cna
-
-model = load_pretrained("joint_snv_cna_noloh")    # download + instantiate, ~3 s cold
-snv_df, _ = lift_snv(snv_df, from_assembly="GRCh38")    # identity if from_assembly=="GRCh37"
-cna_df, _ = lift_cna(cna_df, from_assembly="GRCh38")
-result = model.featurize(snv_df=snv_df, cna_df=cna_df)  # repeat without re-downloading
-```
-
-UCSC chain files are downloaded on first use and cached at `~/.cache/pyliftover/`; offline environments can point the loader at a bundled chain file via the `chain_file=` argument or the `TESSERA_LIFTOVER_CHAIN` environment variable.
-
-## Reproducing the manuscript
-
 The pipeline runs in three stages:
 
-1. **Data preparation** ([`data/`](data/README.md)): per-cohort
-   download instructions, source-table provenance, and the
-   `create_training_data*.py` / `build_<cohort>_metadata.py` builders
-   that turn raw releases into the analysis-ready CSVs.
-2. **Foundation-model pretraining**
-   ([`scripts/tcga_pancan_*/`](scripts/README.md)): trains the SNV
-   models, the CNA models, and the joint SNV+CNA InfoNCE-aligned
-   foundation model on the TCGA Pan-Cancer Atlas.
-3. **Downstream analyses** ([`scripts/`](scripts/README.md)):
-   variant-pathogenicity calibration, cross-platform validation,
-   tumour-type classification, prognostic stratification, doubly-robust
-   counterfactual treatment-effect estimation, and cell-line transfer.
+1. **Data preparation** ([`data/`](data/README.md)): per-cohort download instructions, source-table provenance, and the builders that turn raw releases into the analysis-ready CSVs.
+2. **Foundation-model pretraining** ([`scripts/tcga_pancan_*/`](scripts/README.md)): trains the SNV models, the CNA models, and the joint SNV+CNA InfoNCE-aligned foundation model on the TCGA Pan-Cancer Atlas.
+3. **Downstream analyses** ([`scripts/`](scripts/README.md)): variant-pathogenicity calibration, cross-platform validation, tumour-type classification, prognostic stratification, doubly-robust counterfactual treatment-effect estimation, and cell-line transfer.
 
-[`scripts/README.md`](scripts/README.md) and
-[`data/README.md`](data/README.md) hold the per-directory tables
-linking each script and cohort to the relevant manuscript section.
+[`scripts/README.md`](scripts/README.md) and [`data/README.md`](data/README.md) hold the per-directory tables linking each script and cohort to the relevant manuscript section.
 
 ## Repository layout
 

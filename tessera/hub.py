@@ -107,6 +107,7 @@ def featurize(
     cna_df=None,
     variant: str = "joint_snv_cna_noloh",
     from_assembly: str = "GRCh37",
+    quantile_normalize_to_tcga: bool = False,
     repo_id: str = DEFAULT_REPO_ID,
     return_predictions: bool = False,
     chain_file=None,
@@ -131,6 +132,14 @@ def featurize(
     from_assembly
         Source reference assembly. ``"GRCh37"`` / ``"hg19"`` is a no-op;
         ``"GRCh38"`` / ``"hg38"`` triggers UCSC liftover.
+    quantile_normalize_to_tcga
+        If True, ``cna_df["Segment_Mean"]`` is rank-mapped onto the
+        TCGA pretraining distribution before inference. Set this for
+        panel-sequencing (MSK-IMPACT, MSK-CHORD, GENIE) and cell-line
+        (DepMap) inputs whose log2-ratio distributions differ from
+        TCGA whole-exome data; leave ``False`` for TCGA-like inputs.
+        See :meth:`tessera.model.TESSERA.featurize` for the full
+        rationale.
     repo_id
         Hugging Face Hub repo to fetch from.
     return_predictions
@@ -161,6 +170,7 @@ def featurize(
         snv_df=snv_df,
         cna_df=cna_df,
         from_assembly=from_assembly,
+        quantile_normalize_to_tcga=quantile_normalize_to_tcga,
         return_predictions=return_predictions,
         chain_file=chain_file,
     )

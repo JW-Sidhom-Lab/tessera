@@ -2085,6 +2085,7 @@ class TESSERA(BaseModel):
         snv_df: Optional[pd.DataFrame] = None,
         cna_df: Optional[pd.DataFrame] = None,
         from_assembly: str = "GRCh37",
+        quantile_normalize_to_tcga: bool = False,
         return_predictions: bool = False,
         chain_file: Optional[str] = None,
         name: str = "_featurize_run",
@@ -2115,6 +2116,17 @@ class TESSERA(BaseModel):
         from_assembly : str, default ``"GRCh37"``
             Source assembly. ``"GRCh37"`` / ``"hg19"`` is a no-op;
             ``"GRCh38"`` / ``"hg38"`` triggers UCSC liftover.
+        quantile_normalize_to_tcga : bool, default ``False``
+            If True, ``cna_df["Segment_Mean"]`` is rank-mapped onto the
+            TCGA pretraining distribution before the model sees it,
+            using the bundled
+            ``tessera/data/cna_sorted.npy`` reference. Set this for
+            **panel-sequencing** (MSK-IMPACT, MSK-CHORD, GENIE) and
+            **cell-line** (DepMap) inputs whose log2-ratio
+            distributions differ from TCGA whole-exome data due to
+            coverage / ploidy differences. Leave ``False`` for
+            TCGA-like whole-exome inputs (the pretraining
+            distribution). No-op when ``cna_df`` is ``None``.
         return_predictions : bool, default ``False``
             If True, also run masked-token / segment-mean reconstruction
             heads and populate ``snv_predictions`` / ``cna_predictions``.
@@ -2169,6 +2181,27 @@ class TESSERA(BaseModel):
 
         if snv_df is None and cna_df is None:
             raise ValueError("featurize requires at least one of snv_df or cna_df.")
+
+        # Optional TCGA-distribution quantile normalisation. Off by
+        # default. Only meaningful when the user's CNA distribution
+        # differs from the TCGA pretraining distribution (panel /
+        # cell-line cohorts).
+        if cna_df is not None and quantile_normalize_to_tcga:
+            from pathlib import Path as _Path
+            import tessera.data as _td
+            from tessera.data.preprocessing import (
+                quantile_normalize_to_tcga as _qn_tcga,
+            )
+            ref_path = _Path(_td.__file__).parent / "cna_sorted.npy"
+            if not ref_path.exists():
+                raise FileNotFoundError(
+                    f"Bundled TCGA CNA reference missing at {ref_path}. "
+                    "Reinstall tessera-foundation."
+                )
+            tcga_sorted = np.load(ref_path)
+            seg = cna_df["Segment_Mean"].astype(float).values
+            cna_df = cna_df.copy()
+            cna_df["Segment_Mean"] = _qn_tcga(seg, tcga_sorted)
 
         # Decide whether to surface LoH to the model: only if it's both
         # present in the input AND supported by the loaded variant.

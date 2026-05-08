@@ -65,6 +65,9 @@ packages = [
     "GRCh38_chr_sizes.txt",
     "download_ref_genomes.sh",
 ]
+"tessera.data" = [
+    "cna_sorted.npy",
+]
 
 [tool.setuptools.exclude-package-data]
 "tessera.ref_genomes" = [
