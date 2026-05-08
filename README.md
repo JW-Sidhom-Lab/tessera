@@ -37,7 +37,11 @@ result = tessera.featurize(
 
 result.snv_features      # (n_variants, 1169)  per-variant embeddings
 result.cna_features      # (n_segments, 688)   per-segment embeddings
+result.snv_table         # the post-liftover SNV rows that produced snv_features
+result.cna_table         # the post-liftover CNA rows that produced cna_features
 ```
+
+Row order in `snv_features` matches `snv_table`, and likewise for CNA. Variants that fail tokenization (non-SBS, missing reference base, off-genome coordinates after liftover) and segments rejected by basic validation are dropped before inference, so `snv_table` / `cna_table` are the authoritative pairing back to the input rows actually embedded.
 
 First call downloads the requested model variant from Hugging Face Hub (~185 MB) and, on first SNV call, the GRCh37 reference genome (~3 GB); both are cached locally.
 
