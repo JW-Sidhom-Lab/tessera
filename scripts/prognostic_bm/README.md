@@ -12,9 +12,10 @@ per-sample cache that drives the published Figure 5 panels.
 
 | Cohort | Categorical comparator | Primary survival endpoint | Manuscript figures |
 |---|---|---|---|
-| `glioma` | WHO 2021 primary class | DSS, 5y | Fig 5 a |
-| `brca`   | OncotypeDX RS tertile  | DSS, 5y | Fig 5 c-j |
-| `prad`   | Decipher tertile       | PFI.1, 5y | Fig 5 k-r |
+| `glioma` | WHO 2021 primary class                | DSS, 5y   | Fig 5 a   |
+| `ucec`   | TCGA PanCancer molecular subtype      | DSS, 5y   | Fig 5 b   |
+| `brca`   | OncotypeDX RS tertile                 | DSS, 5y   | Fig 5 c-j |
+| `prad`   | Decipher tertile                      | PFI.1, 5y | Fig 5 k-r |
 
 ## Pipeline
 

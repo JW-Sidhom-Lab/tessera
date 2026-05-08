@@ -1,14 +1,16 @@
 # Prognostic-biomarker cohort metadata
 
-Per-patient clinical / outcome tables for the three TCGA cohorts in
+Per-patient clinical / outcome tables for the four TCGA cohorts in
 the manuscript's prognostic-biomarker analyses (Figure 4 g-h glioma
-case study; Figure 5 a-r glioma + BRCA + PRAD UMAP overlays + joint
-Cox of the TESSERA risk score against published transcriptomic
-comparators). One subdirectory per cohort, each self-contained:
+case study; Figure 5 a-r glioma + UCEC + BRCA + PRAD UMAP overlays
+plus joint Cox of the TESSERA risk score against published
+transcriptomic comparators). One subdirectory per cohort, each
+self-contained:
 
 | Cohort | Comparator | Manuscript figures | README |
 |---|---|---|---|
 | `glioma/` | WHO 2021 primary class ([Leiria 2025](https://doi.org/10.1038/s41597-025-05117-2)) | Figure 4 g-h, Figure 5 a | [README](glioma/README.md) |
+| `ucec/`   | TCGA PanCancer molecular subtype ([Kandoth 2013](https://doi.org/10.1038/nature12113) / [Hoadley 2018](https://doi.org/10.1016/j.cell.2018.03.022)) | Figure 5 b | [README](ucec/README.md) |
 | `brca/`   | DLRS-reconstructed OncotypeDX RS ([Howard 2023](https://doi.org/10.1038/s41523-023-00530-5)) | Figure 5 c-j | [README](brca/README.md) |
 | `prad/`   | curatedPCaData Decipher score ([Laajala 2023](https://doi.org/10.1038/s41597-023-02335-4)) | Figure 5 k-r | [README](prad/README.md) |
 
@@ -33,12 +35,13 @@ Each subdirectory contains:
   columns are strictly binary (`{0, 1}`), matching the convention
   `lifelines` expects and the convention applied by the Figure 4
   concordance scripts.
-- **Endpoint columns**: glioma and BRCA emit the curated DSS / DFI /
-  PFI values (the `_cr` columns from `clinical.csv` after the
+- **Endpoint columns**: glioma, UCEC, and BRCA emit the curated DSS /
+  DFI / PFI values (the `_cr` columns from `clinical.csv` after the
   ambiguous-cause remap) under the simpler names `DSS`, `DFI`, `PFI`.
   PRAD keeps the original `_cr` column names plus the full set of Liu
   2018 endpoint variants (`PFI.1` is the recommended primary endpoint
   for PRAD because DSS is underpowered, ~5 events).
-- **Reference papers** (PDFs of Leiria 2025, Howard 2023, Laajala 2023)
-  are not redistributed to keep the repository copyright-clean; full
-  citations live in each cohort's README and build-script docstring.
+- **Reference papers** (PDFs of Leiria 2025, Kandoth 2013, Hoadley 2018,
+  Howard 2023, Laajala 2023) are not redistributed to keep the
+  repository copyright-clean; full citations live in each cohort's
+  README and build-script docstring.
