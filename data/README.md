@@ -12,7 +12,7 @@ the analysis-ready CSVs.
 | [`clinvar/`](clinvar/README.md) | Variant-pathogenicity labels (Fig. 1 h-o) | NCBI ClinVar, GRCh37 VCF release |
 | [`msk_chord_2024/`](msk_chord_2024/README.md) | CNA cross-platform validation (Fig. 2 d) and clinical predictive-biomarker analyses (Fig. 6 b-i) | MSK-CHORD 2024, cBioPortal / Synapse |
 | [`DepMap/`](DepMap/README.md) | CRC cell-line orthogonal validation (Fig. 6 n) | DepMap 24Q2 + CTRPv2 |
-| [`prognostic/`](prognostic/README.md) | Per-cohort clinical metadata + published transcriptomic comparators for the glioma WHO 2021 classifier concordance (Fig. 4 g-h) and the unsupervised prognostic biomarker UMAPs + joint Cox (Fig. 5 a-r) | Liu 2018 (TCGA Pan-Cancer Clinical Data Resource), Howard 2023 (DLRS), Laajala 2023 (curatedPCaData), Leiria 2025 (MONET) |
+| [`prognostic/`](prognostic/README.md) | Per-cohort clinical metadata + published transcriptomic comparators for the glioma WHO 2021 classifier concordance (Fig. 4 g-h) and the unsupervised prognostic biomarker UMAPs + joint Cox (Fig. 5 a-r) | Liu 2018 (TCGA Pan-Cancer Clinical Data Resource), Kandoth 2013 + Hoadley 2018 (TCGA UCEC PanCancer Atlas subtypes), Howard 2023 (DLRS), Laajala 2023 (curatedPCaData), Leiria 2025 (MONET) |
 
 See each cohort's `README.md` for the download URL, required files, run
 commands, and expected outputs.
@@ -28,12 +28,12 @@ Two pipeline shapes coexist:
   overrides (`--maf`, `--clinical`, `--output`, etc.), are import-safe (no
   module-level side effects), and emit per-stage row counts via Python
   `logging` at INFO level.
-- **Clinical-metadata cohorts** (`prognostic/glioma/`, `prognostic/brca/`,
-  `prognostic/prad/`) include the small published source tables they
-  consume, a `build_<cohort>_metadata.py` builder, and the resulting
-  `<cohort>_clinical_metadata.csv`. The builders run at module load and
-  accept env-var overrides (`WHO2021_CSV`, `DLRS_CSV`, `SCORES_RDS`,
-  `CLINICAL_CSV`, `OUTPUT_CSV`).
+- **Clinical-metadata cohorts** (`prognostic/glioma/`, `prognostic/ucec/`,
+  `prognostic/brca/`, `prognostic/prad/`) include the small published
+  source tables they consume, a `build_<cohort>_metadata.py` builder,
+  and the resulting `<cohort>_clinical_metadata.csv`. The builders run
+  at module load and accept env-var overrides (`WHO2021_CSV`,
+  `SUBTYPE_TSV`, `DLRS_CSV`, `SCORES_RDS`, `CLINICAL_CSV`, `OUTPUT_CSV`).
 
 In both cases, run the scripts from inside the cohort directory to use the
 defaults.
