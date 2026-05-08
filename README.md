@@ -11,7 +11,7 @@
 
 TESSERA is a self-supervised foundation model jointly pretrained on somatic single-nucleotide variants (SNVs) and copy-number alterations (CNAs) from the TCGA Pan-Cancer Atlas. A single learned representation, produced once and reused without retraining, supports variant pathogenicity prediction, pan-cancer tumour-type classification, unsupervised molecular subtyping, prognostic stratification, and counterfactual treatment-effect estimation.
 
-This repository contains the reference implementation, the pretrained-weights pointer, the inference utilities described in the accompanying paper, and the end-to-end analysis pipelines that reproduce every panel of Figures 1-6 and Supplementary Figures 1-12.
+This repository contains the reference implementation, the pretrained-weights pointer, and the end-to-end analysis pipelines that accompany the TESSERA manuscript.
 
 ## Quick start
 
@@ -109,8 +109,7 @@ UCSC chain files are downloaded on first use and cached at `~/.cache/pyliftover/
 
 ## Reproducing the manuscript
 
-Every published panel is backed by a script in this repository. The
-pipeline runs in three stages:
+The pipeline runs in three stages:
 
 1. **Data preparation** ([`data/`](data/README.md)): per-cohort
    download instructions, source-table provenance, and the
@@ -121,15 +120,13 @@ pipeline runs in three stages:
    models, the CNA models, and the joint SNV+CNA InfoNCE-aligned
    foundation model on the TCGA Pan-Cancer Atlas.
 3. **Downstream analyses** ([`scripts/`](scripts/README.md)):
-   variant-pathogenicity (Fig. 1 h-o), cross-platform validation
-   (Fig. 1 f-g, Fig. 2 d), tumour-type classification (Fig. 3,
-   Fig. 4 b-e), prognostic UMAP + joint Cox (Fig. 5), doubly-robust
-   counterfactual treatment-effect (Fig. 6 a-m), and DepMap
-   cell-line transfer (Fig. 6 n).
+   variant-pathogenicity calibration, cross-platform validation,
+   tumour-type classification, prognostic stratification, doubly-robust
+   counterfactual treatment-effect estimation, and cell-line transfer.
 
 [`scripts/README.md`](scripts/README.md) and
-[`data/README.md`](data/README.md) hold the full per-directory tables
-mapping each script and cohort to its manuscript figure.
+[`data/README.md`](data/README.md) hold the per-directory tables
+linking each script and cohort to the relevant manuscript section.
 
 ## Repository layout
 
