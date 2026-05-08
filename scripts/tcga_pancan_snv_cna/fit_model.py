@@ -4,11 +4,12 @@ Loads the TCGA training and validation SNV + CNA tables (produced by
 ``scripts/data/tcga/create_training_snv.py`` and
 ``create_training_cna.py``) and trains a dual-branch TESSERA model
 under ``model_config_infonce.py``: SNV branch (local + global
-attention), CNA branch (segment self-attention), an explicit
-cross-attention block that lets the two modalities re-contextualize
-each other, masked-token reconstruction on both modalities, and a
-per-sample InfoNCE alignment loss between the pooled SNV and CNA
-sample embeddings.
+attention), CNA branch (segment self-attention), masked-token
+reconstruction on both modalities, and a per-sample InfoNCE alignment
+loss between the pooled SNV and CNA sample embeddings. The two
+encoders are coupled only through the contrastive objective; the
+published config sets ``cross_modal_blocks=0``, so no cross-modal
+attention block is built.
 
 Inputs
 ------
