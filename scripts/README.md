@@ -25,7 +25,7 @@ scripts run end-to-end against the pretrained foundation model.
         ▼ scripts/variant_effect/, scripts/tumor_classification_*/
         │   (downstream supervised tasks built on frozen TESSERA features)
         │
-        ▼ scripts/{prognostic_bm,predictive_bm,depmap}/
+        ▼ scripts/{prognostic_bm,predictive_bm,depmap,crc_folfoxai_replication}/
             (clinical biomarker analyses)
 ```
 
@@ -70,6 +70,7 @@ scripts run end-to-end against the pretrained foundation model.
 | [`prognostic_bm/`](prognostic_bm/README.md) | Per-cohort UMAP + polynomial Cox + risk-group Kaplan-Meier on the joint InfoNCE-aligned per-sample features. Backs Fig. 4 g-h (glioma classifier concordance) and Fig. 5 a-r (glioma + BRCA + PRAD). |
 | [`predictive_bm/`](predictive_bm/README.md) | Doubly-robust counterfactual treatment-effect pipeline (CRC FOLFOX vs FOLFIRI; PDAC FOLFIRINOX vs gemcitabine + nab-paclitaxel) + PMD attribution + genotype-rule subgroups. Backs Fig. 6 a-m + Sup Fig 10-12. |
 | [`depmap/`](depmap/README.md) | Cross-cohort transfer of the MSK-CHORD-trained CRC predictive biomarker to DepMap colorectal cell lines, tested against CTRPv2 oxaliplatin and SN-38 dose-response. Backs Fig. 6 n. |
+| [`crc_folfoxai_replication/`](crc_folfoxai_replication/README.md) | Faithful re-implementation of the published FOLFOXai signature (Abraham 2021) on the same MSK-CHORD 1L stage IV CRC FOLFOX / FOLFIRI cohort; head-to-head comparator showing the FOLFOXai-on-MSK-CHORD score is prognostic-only without the arm-stratified direction reversal that defines a predictive biomarker under the Ballman 2015 framework. Backs Sup Fig 13. |
 
 ## Conventions
 
