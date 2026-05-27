@@ -72,6 +72,12 @@ scripts run end-to-end against the pretrained foundation model.
 | [`depmap/`](depmap/README.md) | Cross-cohort transfer of the MSK-CHORD-trained CRC predictive biomarker to DepMap colorectal cell lines, tested against CTRPv2 oxaliplatin and SN-38 dose-response. Backs Fig. 6 n. |
 | [`crc_folfoxai_replication/`](crc_folfoxai_replication/README.md) | Faithful re-implementation of the published FOLFOXai signature (Abraham 2021) on the same MSK-CHORD 1L stage IV CRC FOLFOX / FOLFIRI cohort; head-to-head comparator showing the FOLFOXai-on-MSK-CHORD score is prognostic-only without the arm-stratified direction reversal that defines a predictive biomarker under the Ballman 2015 framework. Backs Sup Fig 13. |
 
+### Public-release tooling
+
+| Directory | Role |
+|---|---|
+| [`zenodo_deposit/`](zenodo_deposit/DEPOSIT_README.md) | Builds the Zenodo deposit (DOI [10.5281/zenodo.20419467](https://doi.org/10.5281/zenodo.20419467)) of per-variant, per-segment, and per-sample TESSERA features for the full TCGA Pan-Cancer Atlas (joint SNV+CNA InfoNCE-aligned model). `package_tcga_features.py` regenerates the three HDF5 files reproducibly from the cached multimodal-features pkl; `DEPOSIT_README.md` is the data documentation that ships inside the archive. |
+
 ## Conventions
 
 - Each analysis directory contains a `README.md` with the cohort,
