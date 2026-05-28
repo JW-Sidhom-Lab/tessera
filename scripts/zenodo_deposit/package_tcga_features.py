@@ -4,9 +4,9 @@ Reads the cached joint SNV+CNA InfoNCE multimodal features pkl (produced by
 the joint pretraining pipeline in ``scripts/tcga_pancan_snv_cna/``) and writes
 three HDF5 files for public release on Zenodo:
 
-  snv_per_variant.h5         (~8 GB)   per-variant SNV embeddings + metadata
-  cna_per_segment.h5         (~4 GB)   per-segment CNA embeddings + metadata
-  per_sample_aggregated.h5   (~150 MB) mean+max pools per modality + token counts
+  snv_per_variant.h5         per-variant SNV embeddings + metadata
+  cna_per_segment.h5         per-segment CNA embeddings + metadata
+  per_sample_aggregated.h5   mean+max pools per modality + token counts
 
 The deposit ships the canonical joint SNV+CNA InfoNCE-aligned model used in
 Figs. 4-6 of the manuscript. Train and validation rows of the model split
@@ -17,8 +17,7 @@ partition if they need to).
 Memory design
 -------------
 The job is split into two phases that never hold more than one large array
-at a time, so peak RSS stays around ~16 GB even though the source pkl is
-~13 GB:
+at a time, so peak RSS stays bounded even though the source pkl is large:
 
   Phase 1 (per-token): load the pkl, stream each modality's train+valid
     arrays directly into a resizable HDF5 dataset via two slice writes (no
@@ -129,7 +128,7 @@ def _h5_valid(path: Path) -> bool:
 
 def _load_pkl() -> dict:
     import pickle
-    _log(f'Loading {PKL_PATH} (~13 GB) ...')
+    _log(f'Loading {PKL_PATH} ...')
     with open(PKL_PATH, 'rb') as f:
         d = pickle.load(f)
     for k, v in d.items():

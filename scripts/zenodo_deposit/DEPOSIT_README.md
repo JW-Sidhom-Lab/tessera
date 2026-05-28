@@ -15,12 +15,12 @@ representation of TCGA without re-running pretraining or inference.
 
 ## What is in this deposit
 
-| File | Size | Description |
-|---|---|---|
-| `snv_per_variant.h5` | ~9 GB | Per-variant SNV embeddings (1{,}921{,}403 rows × 1{,}169 dims) with full variant metadata. |
-| `cna_per_segment.h5` | ~5 GB | Per-segment CNA embeddings (1{,}823{,}050 rows × 688 dims) with full segment metadata. |
-| `per_sample_aggregated.h5` | ~150 MB | Per-sample mean and max pools of the per-token features, by modality, plus per-sample token counts. This is the standard input form that the downstream manuscript analyses consume. |
-| `README.md` | this file | |
+| File | Description |
+|---|---|
+| `snv_per_variant.h5` | Per-variant SNV embeddings (1{,}921{,}403 rows × 1{,}169 dims) with full variant metadata. |
+| `cna_per_segment.h5` | Per-segment CNA embeddings (1{,}823{,}050 rows × 688 dims) with full segment metadata. |
+| `per_sample_aggregated.h5` | Per-sample mean and max pools of the per-token features, by modality, plus per-sample token counts. This is the standard input form that the downstream manuscript analyses consume. |
+| `README.md` | This file. |
 
 (Row counts are approximate; exact counts are encoded in each file's
 top-level attributes.)
