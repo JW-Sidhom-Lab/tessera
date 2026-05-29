@@ -76,7 +76,7 @@ scripts run end-to-end against the pretrained foundation model.
 
 | Directory | Role |
 |---|---|
-| [`zenodo_deposit/`](zenodo_deposit/README) | Builds the Zenodo deposit (DOI [10.5281/zenodo.20419467](https://doi.org/10.5281/zenodo.20419467)) of per-variant, per-segment, and per-sample TESSERA features for the full TCGA Pan-Cancer Atlas (joint SNV+CNA InfoNCE-aligned model). `package_tcga_features.py` regenerates the three HDF5 files reproducibly from the cached multimodal-features pkl; `DEPOSIT_README.md` is the data documentation that ships inside the archive. |
+| [`zenodo_deposit/`](zenodo_deposit/README.md) | Builds the Zenodo deposit (DOI [10.5281/zenodo.20419467](https://doi.org/10.5281/zenodo.20419467)) of per-variant, per-segment, and per-sample TESSERA features for the full TCGA Pan-Cancer Atlas (joint SNV+CNA InfoNCE-aligned model). `package_tcga_features.py` regenerates the three HDF5 files reproducibly from the cached multimodal-features pkl; `README.md` is the data documentation included in the archive. |
 
 ## Conventions
 

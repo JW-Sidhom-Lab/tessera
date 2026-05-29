@@ -5,7 +5,7 @@ TESSERA joint SNV+CNA foundation model, computed on the full TCGA
 Pan-Cancer Atlas cohort.**
 
 This deposit accompanies the manuscript *"A Foundation Model for the
-Cancer Genome"* (Sidhom et al.) and ships the foundation-model outputs
+Cancer Genome"* (Sidhom et al.) and provides the foundation-model outputs
 that back Figs. 4-6 and the associated downstream analyses. The features
 are released so that downstream analyses can build on the TESSERA
 representation of TCGA without re-running pretraining or inference.

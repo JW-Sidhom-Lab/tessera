@@ -74,6 +74,53 @@ result = model.featurize(snv_df=snv_df, cna_df=cna_df)  # reuse without re-downl
 
 UCSC chain files for liftover are downloaded on first use to `~/.cache/pyliftover/`; offline environments can supply a local file via `chain_file=` or the `TESSERA_LIFTOVER_CHAIN` env var.
 
+## Pre-computed TCGA Pan-Cancer features
+
+TESSERA features for the full TCGA Pan-Cancer Atlas (from the joint SNV+CNA InfoNCE-aligned model used in Figs. 4-6 of the manuscript) are deposited on Zenodo and can be downloaded directly. This avoids installing the package or running inference if you only need features for TCGA samples.
+
+**DOI:** [10.5281/zenodo.20419467](https://doi.org/10.5281/zenodo.20419467)
+
+The deposit contains three HDF5 files plus a README documenting the schema:
+
+| File | Contents |
+|---|---|
+| `snv_per_variant.h5` | Per-variant SNV embeddings (1{,}921{,}403 rows × 1{,}169 dims) with full variant metadata. |
+| `cna_per_segment.h5` | Per-segment CNA embeddings (1{,}823{,}050 rows × 688 dims) with full segment metadata. |
+| `per_sample_aggregated.h5` | Per-sample mean and max pools of per-token features, by modality, plus per-sample token counts. This is the standard input form the downstream manuscript analyses consume. |
+
+Download:
+
+```bash
+mkdir -p tessera_features && cd tessera_features
+for f in snv_per_variant.h5 cna_per_segment.h5 per_sample_aggregated.h5 README.md; do
+  curl -L -o "$f" "https://zenodo.org/records/20419467/files/$f"
+done
+```
+
+Load the per-sample features (joint-modality, the manuscript form):
+
+```python
+import h5py, numpy as np
+
+with h5py.File('per_sample_aggregated.h5', 'r') as f:
+    snv_mean = f['snv/mean'][:]                   # (n_snv_samples, 1169) float32
+    snv_max  = f['snv/max'][:]                    # (n_snv_samples, 1169)
+    cna_mean = f['cna/mean'][:]                   # (n_cna_samples,  688)
+    cna_max  = f['cna/max'][:]                    # (n_cna_samples,  688)
+    snv_sample_id = f['snv/sample_id'][:].astype(str)
+    cna_sample_id = f['cna/sample_id'][:].astype(str)
+
+joint = np.intersect1d(snv_sample_id, cna_sample_id)
+idx_snv = np.searchsorted(snv_sample_id, joint)
+idx_cna = np.searchsorted(cna_sample_id, joint)
+features = np.concatenate([
+    snv_mean[idx_snv], snv_max[idx_snv],
+    cna_mean[idx_cna], cna_max[idx_cna],
+], axis=1)                                        # (n_joint_samples, 3714)
+```
+
+The README inside the archive documents the full HDF5 schema for all three files (per-variant SNV metadata, per-segment CNA metadata, per-sample token counts, per-modality RobustScaler parameters fitted on the same TCGA Pan-Cancer split).
+
 ## Reproducing the manuscript
 
 For training, downstream analyses, and figure generation, clone the repo:

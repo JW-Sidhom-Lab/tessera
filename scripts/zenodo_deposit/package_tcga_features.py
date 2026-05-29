@@ -8,7 +8,7 @@ three HDF5 files for public release on Zenodo:
   cna_per_segment.h5         per-segment CNA embeddings + metadata
   per_sample_aggregated.h5   mean+max pools per modality + token counts
 
-The deposit ships the canonical joint SNV+CNA InfoNCE-aligned model used in
+The deposit provides the canonical joint SNV+CNA InfoNCE-aligned model used in
 Figs. 4-6 of the manuscript. Train and validation rows of the model split
 are merged into a single deposit (split membership is recorded as a
 ``split`` metadata column so downstream users can replicate the original
