@@ -7,6 +7,10 @@
   A foundation model for the cancer genome.
 </p>
 
+<p align="center">
+  📄 <a href="https://www.biorxiv.org/content/10.64898/2026.05.27.728319v1">Preprint · bioRxiv, 2026</a>
+</p>
+
 ---
 
 TESSERA is a self-supervised foundation model jointly pretrained on somatic single-nucleotide variants (SNVs) and copy-number alterations (CNAs) from the TCGA Pan-Cancer Atlas. A single learned representation, produced once and reused without retraining, supports variant pathogenicity prediction, pan-cancer tumour-type classification, unsupervised molecular subtyping, prognostic stratification, and counterfactual treatment-effect estimation.
@@ -163,9 +167,18 @@ tessera/
 
 If you use TESSERA in your work, please cite:
 
-> *citation pending publication*
+> Sidhom J.W., Baras A.S., Elemento O., Shah M.A. *A foundation model for the cancer genome.* bioRxiv, 2026. https://www.biorxiv.org/content/10.64898/2026.05.27.728319v1
 
-A BibTeX entry will be added on acceptance.
+```bibtex
+@article{sidhom2026tessera,
+  title   = {A foundation model for the cancer genome},
+  author  = {Sidhom, John-William and Baras, Alex S. and Elemento, Olivier and Shah, Manish A.},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.05.27.728319},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.05.27.728319v1}
+}
+```
 
 ## License
 

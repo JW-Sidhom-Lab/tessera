@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use TESSERA in your research, please cite this repository and the accompanying paper (citation pending publication)."
+message: "If you use TESSERA in your research, please cite both this repository and the accompanying preprint (see preferred-citation)."
 title: "TESSERA: Tumour Embeddings via Self-Supervised Encoding and Reconstruction of Alterations"
 abstract: "A self-supervised foundation model for the cancer genome, jointly pretrained on somatic single-nucleotide variants and copy-number alterations from the TCGA Pan-Cancer Atlas through masked-token reconstruction within each modality and an InfoNCE contrastive objective across modalities."
 type: software
@@ -43,4 +43,8 @@ preferred-citation:
       given-names: Olivier
     - family-names: Shah
       given-names: Manish A.
-  notes: "Citation pending publication. A DOI-tagged Zenodo archive of the code version used in the published study will be deposited at acceptance."
+  journal: "bioRxiv"
+  year: 2026
+  doi: "10.64898/2026.05.27.728319"
+  url: "https://www.biorxiv.org/content/10.64898/2026.05.27.728319v1"
+  notes: "Preprint. A DOI-tagged Zenodo archive of the code version used in the published study will be deposited at acceptance."
