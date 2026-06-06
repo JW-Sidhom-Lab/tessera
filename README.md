@@ -23,14 +23,19 @@ This repository contains the reference implementation, the pretrained-weights po
 pip install tessera-foundation
 ```
 
+*Typical install time on a modern desktop: ~2–5 minutes for the package itself. The pretrained weights (~185 MB) and GRCh37 reference genome (~3 GB) are downloaded lazily on first call and cached locally.*
+
 ```python
 import tessera, pandas as pd
 
-snv_df = pd.read_csv("snv.csv")    # cols: Tumor_Sample_Barcode, Chromosome,
-                                   # Start_Position, Reference_Allele,
-                                   # Tumor_Seq_Allele2, vaf
-cna_df = pd.read_csv("cna.csv")    # cols: Tumor_Sample_Barcode, Chromosome,
-                                   # Start, End, Segment_Mean
+# Bundled demo CSVs (~441 SNVs + ~344 CNAs of real anonymised TCGA-format rows).
+# Replace these URLs with paths to your own data in the same schema:
+#   SNV cols: Tumor_Sample_Barcode, Chromosome, Start_Position,
+#             Reference_Allele, Tumor_Seq_Allele2, vaf
+#   CNA cols: Tumor_Sample_Barcode, Chromosome, Start, End, Segment_Mean
+DEMO = "https://raw.githubusercontent.com/JW-Sidhom-Lab/tessera/main/inference_api"
+snv_df = pd.read_csv(f"{DEMO}/example_snv.csv")
+cna_df = pd.read_csv(f"{DEMO}/example_cna.csv")
 
 result = tessera.featurize(
     snv_df=snv_df, cna_df=cna_df,
@@ -47,7 +52,7 @@ result.cna_table         # the post-liftover CNA rows that produced cna_features
 
 Row order in `snv_features` matches `snv_table`, and likewise for CNA. Variants that fail tokenization (non-SBS, missing reference base, off-genome coordinates after liftover) and segments rejected by basic validation are dropped before inference, so `snv_table` / `cna_table` are the authoritative pairing back to the input rows actually embedded.
 
-First call downloads the requested model variant from Hugging Face Hub (~185 MB) and, on first SNV call, the GRCh37 reference genome (~3 GB); both are cached locally.
+First call downloads the requested model variant from Hugging Face Hub (~185 MB) and, on first SNV call, the GRCh37 reference genome (~3 GB); both are cached locally. On a 2024 MacBook Pro (Apple M3), first-call featurisation of the demo CSVs above completes in ~30–60 seconds; subsequent calls within the same session run in under 5 seconds.
 
 **CSV column conventions:**
 
@@ -136,6 +141,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 bash tessera/ref_genomes/download_ref_genomes.sh
 ```
+
+*Typical install time on a modern desktop: ~10–15 minutes for the Python dependencies (TensorFlow is the largest), plus a one-time ~10 minutes for the GRCh37 reference-genome download (~3 GB).*
 
 The pipeline runs in three stages:
 
