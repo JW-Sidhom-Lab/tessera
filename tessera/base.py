@@ -11,12 +11,13 @@ import numpy as np
 import os
 import time
 from tqdm import tqdm
-from pyfaidx import Fasta
 import tensorflow as tf
 import tessera.data.preprocessing
 import shutil
 from sklearn.preprocessing import LabelEncoder
 from keras.config import enable_unsafe_deserialization
+# tessera.ref_genome is imported lazily at its use sites below so that
+# `python -m tessera.ref_genome` runs without a redundant-import RuntimeWarning.
 
 class BaseModel(object):
     def __init__(self,name='TESSERA',genome_version='GRCh37',use_distributed=False,model_dir=None,jit_compile=True,mixed_precision=False):
@@ -48,10 +49,12 @@ class BaseModel(object):
 
         self.model = None
 
-        if genome_version == 'GRCh37':
-            self.fasta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ref_genomes', 'GCF_000001405.25_GRCh37.p13_genomic.fna')
-        elif genome_version == 'GRCh38':
-            self.fasta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ref_genomes', 'GCF_000001405.40_GRCh38.p14_genomic.fna')
+        # Path to the reference FASTA if it is already available locally, else
+        # None. The actual download (if needed) happens lazily in
+        # create_sample_dataset so that merely instantiating the model never
+        # triggers a ~3 GB fetch; self.fasta_path is populated there on first use.
+        import tessera.ref_genome
+        self.fasta_path = tessera.ref_genome.resolved_fasta_path(genome_version)
 
         # Load chromosome sizes for position normalization
         self.chr_sizes = self._load_chromosome_sizes()
@@ -958,8 +961,12 @@ class BaseModel(object):
             bypassing the Python generator entirely during training/validation.
             Ideal for validation datasets where data doesn't need to change between epochs.
         """
-        # Load FASTA and chromosome mapper
-        fasta = Fasta(self.fasta_path)
+        # Load FASTA and chromosome mapper. Provision the reference genome on
+        # first use (downloads ~3 GB from NCBI to the local cache if absent), and
+        # open it with the index routed to a writable location if needed.
+        import tessera.ref_genome
+        self.fasta_path = tessera.ref_genome.ensure_reference_genome(self.genome_version)
+        fasta = tessera.ref_genome.open_fasta(self.fasta_path)
         chromosome_mapper = tessera.data.preprocessing.ChromosomeMapper()
         context_cache = {}
 

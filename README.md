@@ -23,7 +23,7 @@ This repository contains the reference implementation, the pretrained-weights po
 pip install tessera-foundation
 ```
 
-*Typical install time on a modern desktop: ~2–5 minutes for the package itself. The pretrained weights (~185 MB) and GRCh37 reference genome (~3 GB) are downloaded lazily on first call and cached locally.*
+*Typical install time on a modern desktop: ~2–5 minutes for the package itself. The pretrained weights (~185 MB, cached under `~/.cache/huggingface`) and the GRCh37 reference genome (~3 GB, cached under `~/.cache/tessera/ref_genomes`) are downloaded lazily on first call and reused thereafter.*
 
 ```python
 import tessera, pandas as pd
@@ -52,7 +52,7 @@ result.cna_table         # the post-liftover CNA rows that produced cna_features
 
 Row order in `snv_features` matches `snv_table`, and likewise for CNA. Variants that fail tokenization (non-SBS, missing reference base, off-genome coordinates after liftover) and segments rejected by basic validation are dropped before inference, so `snv_table` / `cna_table` are the authoritative pairing back to the input rows actually embedded.
 
-First call downloads the requested model variant from Hugging Face Hub (~185 MB) and, on first SNV call, the GRCh37 reference genome (~3 GB); both are cached locally. On a 2024 MacBook Pro (Apple M3), first-call featurisation of the demo CSVs above completes in ~30–60 seconds; subsequent calls within the same session run in under 5 seconds.
+First call downloads the requested model variant from Hugging Face Hub (~185 MB, cached under `~/.cache/huggingface`) and, on first featurisation, the GRCh37 reference genome (~3 GB, cached under `~/.cache/tessera/ref_genomes`). Both are reused on later calls. To pre-provision the genome (or point at an existing copy on an offline/shared machine), set `TESSERA_REF_GENOME_DIR` to a directory containing the FASTA, or run `tessera/ref_genomes/download_ref_genomes.sh`. On a 2024 MacBook Pro (Apple M3), first-call featurisation of the demo CSVs above (genome already cached) completes in ~30–60 seconds; subsequent calls within the same session run in under 5 seconds.
 
 **CSV column conventions:**
 
