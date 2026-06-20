@@ -85,7 +85,32 @@ def test_snv_recon_metrics_accuracy_and_observed_prob():
     m = _snv_recon_metrics(probs, true_tokens, loss)
     assert abs(m["snv_mean_observed_prob"] - 0.7) < 1e-9  # mean(1.0, 0.4)
     assert abs(m["snv_accuracy"] - 0.5) < 1e-9  # only sample 0 argmax-correct
+    assert abs(m["snv_alt_accuracy"] - 0.5) < 1e-9  # alias for the alt-only accuracy
     assert abs(m["snv_mean_loss"] - np.mean(loss)) < 1e-9
+    # No ref head supplied -> no joint/ref keys.
+    assert "snv_joint_accuracy" not in m
+    assert "snv_ref_accuracy" not in m
+
+
+def test_snv_recon_metrics_joint_ref_alt():
+    # Manuscript "Ref/Alt" accuracy: a variant counts only if BOTH ref and alt
+    # argmax are correct. alt correct on {0,1,2}; ref correct on {1,2,3};
+    # joint = {1,2}.
+    n = 4
+    alt_true = np.array([1, 2, 3, 4])
+    alt_pred = np.array([1, 2, 3, 0])     # sample 3 alt wrong
+    ref_true = np.array([4, 3, 2, 1])
+    ref_pred = np.array([0, 3, 2, 1])     # sample 0 ref wrong
+    probs = np.zeros((n, 1, 7))
+    ref_probs = np.zeros((n, 1, 7))
+    for i in range(n):
+        probs[i, 0, alt_pred[i]] = 1.0
+        ref_probs[i, 0, ref_pred[i]] = 1.0
+    m = _snv_recon_metrics(probs, alt_true[:, None], np.zeros(n),
+                           ref_probs, ref_true[:, None])
+    assert abs(m["snv_alt_accuracy"] - 0.75) < 1e-9    # {0,1,2} correct
+    assert abs(m["snv_ref_accuracy"] - 0.75) < 1e-9    # {1,2,3} correct
+    assert abs(m["snv_joint_accuracy"] - 0.5) < 1e-9   # {1,2} both correct
 
 
 # --------------------------------------------------------------------------- #

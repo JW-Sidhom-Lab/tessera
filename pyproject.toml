@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tessera-foundation"
-version = "0.1.4"
+version = "0.1.5"
 description = "TESSERA: a foundation model for the cancer genome."
 readme = "README.md"
 requires-python = ">=3.10"

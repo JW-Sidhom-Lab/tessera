@@ -92,22 +92,47 @@ class ReconstructResult:
     snv_scores: Optional[pd.DataFrame] = None
     cna_scores: Optional[pd.DataFrame] = None
 
+    # Cohort metrics. SNV keys: ``snv_joint_accuracy`` (the manuscript "Ref/Alt"
+    # accuracy — both ref and alt argmax correct; present only with a ref head),
+    # ``snv_ref_accuracy``, ``snv_alt_accuracy`` (== ``snv_accuracy``),
+    # ``snv_mean_observed_prob``, ``snv_mean_loss``. CNA keys: ``cna_mse``,
+    # ``cna_mae``, ``cna_r2``, ``cna_correlation`` (+ ``cna_loh_*`` on the LoH variant).
     metrics: dict = field(default_factory=dict)
     liftover_stats: dict = field(default_factory=dict)
 
 
 # --- reconstruction metric helpers (formulas mirror scripts/tcga_pancan_*/) ------
 
-def _snv_recon_metrics(probs, true_tokens, loss) -> dict:
-    """Cohort SNV reconstruction metrics from the alt head."""
+def _snv_recon_metrics(probs, true_tokens, loss, ref_probs=None, ref_true=None) -> dict:
+    """Cohort SNV masked-token reconstruction metrics.
+
+    Per-variant correctness follows the manuscript convention
+    (``scripts/tcga_pancan_snv/plot_accuracy.py``): the alt is "correct" iff the
+    argmax matches the true token at *every* alt position, and likewise for the
+    ref. The headline reconstruction accuracy is the JOINT "Ref/Alt" accuracy —
+    both the reference and the alternate allele correct — reported as
+    ``snv_joint_accuracy`` whenever the variant has a reference head (the
+    manuscript's no-context baseline for this joint accuracy is ~1/6, the six
+    strand-collapsed substitution classes). ``snv_accuracy`` is retained as an
+    alias for the alt-only accuracy.
+    """
     pred = np.argmax(probs, axis=-1)                                  # (n, alt_len)
     tt = np.asarray(true_tokens)
+    alt_correct = np.all(pred == tt, axis=1)                          # (n,) per-variant
     observed = np.take_along_axis(probs, tt[..., None], axis=-1)[..., 0]
-    return {
-        "snv_accuracy": float(np.mean(pred == tt)),
+    out = {
+        "snv_accuracy": float(np.mean(alt_correct)),                 # alt-only (back-compat alias)
+        "snv_alt_accuracy": float(np.mean(alt_correct)),
         "snv_mean_observed_prob": float(np.mean(observed)),
         "snv_mean_loss": float(np.mean(loss)),
     }
+    if ref_probs is not None and ref_true is not None:
+        ref_pred = np.argmax(ref_probs, axis=-1)
+        rt = np.asarray(ref_true)
+        ref_correct = np.all(ref_pred == rt, axis=1)
+        out["snv_ref_accuracy"] = float(np.mean(ref_correct))
+        out["snv_joint_accuracy"] = float(np.mean(alt_correct & ref_correct))
+    return out
 
 
 def _segment_mean_metrics(pred, true) -> dict:
@@ -2639,7 +2664,8 @@ class TESSERA(BaseModel):
                 snv_df, probs, true_tokens, loss, ref_probs, ref_true,
                 self.reverse_token_map,
             )
-            metrics.update(_snv_recon_metrics(probs, true_tokens, loss))
+            metrics.update(_snv_recon_metrics(probs, true_tokens, loss,
+                                              ref_probs, ref_true))
 
         if cna_df is not None:
             # Mirror scripts/tcga_pancan_cna/get_cna_loss_metrics.py. Request LoH
