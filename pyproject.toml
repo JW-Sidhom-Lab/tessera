@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tessera-foundation"
-version = "0.1.3"
+version = "0.1.4"
 description = "TESSERA: a foundation model for the cancer genome."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,6 +46,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
+# matplotlib is only needed for the optional attention-distribution training
+# diagnostic; it is imported lazily, so inference never requires it.
+train = ["matplotlib"]
 
 [project.urls]
 Homepage      = "https://github.com/JW-Sidhom-Lab/tessera"

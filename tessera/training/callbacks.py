@@ -9,10 +9,8 @@ training where one phase's optimiser state should not carry over.
 
 import os
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import io
 import numpy as np
-import matplotlib
 from tessera.input_keys import get_base_input_keys
 
 class LossStopCallback(tf.keras.callbacks.Callback):
@@ -322,8 +320,19 @@ class AttentionDistributionCallback(tf.keras.callbacks.Callback):
         if not self.save_dir:
             return
 
-        # current_backend = matplotlib.get_backend()  # Store current backend
-        # plt.switch_backend('Agg')
+        # matplotlib is an optional, training-only diagnostic dependency: import it
+        # lazily and skip the plot (with a warning) if it isn't installed, so a
+        # missing plotting library never crashes a training run.
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            import warnings
+            warnings.warn(
+                "matplotlib is not installed; skipping the attention-weight "
+                "histogram. Run `pip install matplotlib` to enable this diagnostic.",
+                stacklevel=2,
+            )
+            return
 
         plt.figure(figsize=(10, 6))
         plt.hist(weights, bins=50, alpha=0.7, color='blue', density=True)

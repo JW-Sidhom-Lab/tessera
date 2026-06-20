@@ -174,3 +174,51 @@ def featurize(
         return_predictions=return_predictions,
         chain_file=chain_file,
     )
+
+
+def reconstruct(
+    snv_df=None,
+    cna_df=None,
+    variant: str = "joint_snv_cna_noloh",
+    from_assembly: str = "GRCh37",
+    quantile_normalize_to_tcga: bool = False,
+    repo_id: str = DEFAULT_REPO_ID,
+    return_ref: bool = True,
+    chain_file=None,
+    **load_kwargs,
+):
+    """Single-call masked-token reconstruction: dataframes in, predicted-vs-true + scores out.
+
+    Loads (or reuses a cached) pretrained TESSERA variant and runs
+    :meth:`tessera.model.TESSERA.reconstruct` on the supplied dataframes — the
+    high-level counterpart to :func:`featurize` for the model's reconstruction
+    heads. It reports how well the model reconstructs each masked variant / segment
+    from context (the per-variant masked-token reconstruction and the segment-mean
+    / LoH reconstruction used in the manuscript).
+
+    Parameters mirror :func:`featurize` (``snv_df``, ``cna_df``, ``variant``,
+    ``from_assembly``, ``quantile_normalize_to_tcga``, ``repo_id``, ``chain_file``,
+    ``**load_kwargs``), plus ``return_ref`` (default True) to also return the
+    predicted reference-allele distribution when the variant has a reference head.
+
+    Returns
+    -------
+    tessera.model.ReconstructResult
+        Per-variant / per-segment predicted-vs-true arrays, tidy
+        ``snv_scores`` / ``cna_scores`` tables, a cohort ``metrics`` dict, and
+        ``liftover_stats``. See :meth:`tessera.model.TESSERA.reconstruct`.
+    """
+    cache_key = (variant, repo_id)
+    if cache_key not in _FEATURIZE_MODEL_CACHE:
+        _FEATURIZE_MODEL_CACHE[cache_key] = load_pretrained(
+            variant=variant, repo_id=repo_id, **load_kwargs
+        )
+    model = _FEATURIZE_MODEL_CACHE[cache_key]
+    return model.reconstruct(
+        snv_df=snv_df,
+        cna_df=cna_df,
+        from_assembly=from_assembly,
+        quantile_normalize_to_tcga=quantile_normalize_to_tcga,
+        return_ref=return_ref,
+        chain_file=chain_file,
+    )

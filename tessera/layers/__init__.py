@@ -159,6 +159,15 @@ from tessera.layers.utils import (
     graph_object,
 )
 
+# Pooling / mask layers. Imported here so their @register_keras_serializable
+# decorators run on `import tessera`. Otherwise `pooling` is only imported lazily
+# during model building, and loading the saved reconstruction model
+# (final_model.keras, which references CreateMaskLayer) fails on a fresh install.
+from tessera.layers.pooling import (
+    CreateMaskLayer,
+    MaskedGlobalAveragePooling1D,
+)
+
 # Define public API
 __all__ = [
     # Pipeline functions
@@ -205,4 +214,7 @@ __all__ = [
     'ReverseLayer',
     'NamedIdentityLayer',
     'graph_object',
+    # Pooling / mask
+    'CreateMaskLayer',
+    'MaskedGlobalAveragePooling1D',
 ]

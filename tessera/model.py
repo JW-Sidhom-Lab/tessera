@@ -53,6 +53,169 @@ class FeaturizeResult:
     liftover_stats: dict = field(default_factory=dict)
 
 
+@dataclass
+class ReconstructResult:
+    """Bundle returned by :meth:`TESSERA.reconstruct`.
+
+    Holds the model's masked-token reconstruction outputs: per-variant predicted
+    base distributions vs. the true allele (SNV) and predicted vs. true
+    segment-mean / LoH (CNA), plus cohort-level ``metrics``, tidy per-row
+    ``snv_scores`` / ``cna_scores`` tables, and the post-liftover input tables.
+    Row order of every per-variant / per-segment array and of the score tables
+    matches ``snv_table`` / ``cna_table``. Modalities not supplied are ``None``.
+
+    The focal variant's own alt allele is never observed by its reconstruction
+    head (it is segregated to a diagonally self-masked attention stream), so
+    these are context-conditioned predictions, not echoes of the input — the same
+    masked-token reconstruction the manuscript reports (Fig. 1/2).
+    """
+
+    snv_table: Optional[pd.DataFrame] = None
+    cna_table: Optional[pd.DataFrame] = None
+
+    # SNV reconstruction (from get_variant_probabilities): alt head + optional ref head.
+    snv_probabilities: Optional[np.ndarray] = None       # (n_variants, alt_len, 7)
+    snv_logits: Optional[np.ndarray] = None              # (n_variants, alt_len, 7)
+    snv_true_tokens: Optional[np.ndarray] = None         # (n_variants, alt_len)
+    snv_loss: Optional[np.ndarray] = None                # (n_variants,)  per-variant recon loss
+    snv_ref_probabilities: Optional[np.ndarray] = None   # (n_variants, ref_len, 7)
+    snv_ref_logits: Optional[np.ndarray] = None          # (n_variants, ref_len, 7)
+    snv_ref_true_tokens: Optional[np.ndarray] = None     # (n_variants, ref_len)
+
+    # CNA reconstruction (from get_cna_predictions).
+    cna_segment_mean_pred: Optional[np.ndarray] = None   # (n_segments,)
+    cna_segment_mean_true: Optional[np.ndarray] = None   # (n_segments,)
+    cna_loh_pred: Optional[np.ndarray] = None            # (n_segments,) — LoH variant only
+    cna_loh_true: Optional[np.ndarray] = None            # (n_segments,) — LoH variant only
+
+    # Tidy per-row score tables: the input table + reconstruction columns.
+    snv_scores: Optional[pd.DataFrame] = None
+    cna_scores: Optional[pd.DataFrame] = None
+
+    metrics: dict = field(default_factory=dict)
+    liftover_stats: dict = field(default_factory=dict)
+
+
+# --- reconstruction metric helpers (formulas mirror scripts/tcga_pancan_*/) ------
+
+def _snv_recon_metrics(probs, true_tokens, loss) -> dict:
+    """Cohort SNV reconstruction metrics from the alt head."""
+    pred = np.argmax(probs, axis=-1)                                  # (n, alt_len)
+    tt = np.asarray(true_tokens)
+    observed = np.take_along_axis(probs, tt[..., None], axis=-1)[..., 0]
+    return {
+        "snv_accuracy": float(np.mean(pred == tt)),
+        "snv_mean_observed_prob": float(np.mean(observed)),
+        "snv_mean_loss": float(np.mean(loss)),
+    }
+
+
+def _segment_mean_metrics(pred, true) -> dict:
+    """CNA segment-mean reconstruction metrics (mirrors get_cna_loss_metrics.py)."""
+    pred = np.asarray(pred, dtype=float)
+    true = np.asarray(true, dtype=float)
+    ss_tot = float(np.sum((true - np.mean(true)) ** 2))
+    return {
+        "cna_mse": float(np.mean((pred - true) ** 2)),
+        "cna_mae": float(np.mean(np.abs(pred - true))),
+        "cna_r2": float(1 - np.sum((true - pred) ** 2) / ss_tot) if ss_tot > 0 else float("nan"),
+        "cna_correlation": float(np.corrcoef(true, pred)[0, 1]) if len(true) > 1 else float("nan"),
+    }
+
+
+def _loh_metrics(pred, true) -> dict:
+    """CNA LoH classification metrics (mirrors get_cna_loss_metrics.py)."""
+    from sklearn.metrics import (accuracy_score, precision_recall_fscore_support,
+                                 roc_auc_score)
+    pred = np.asarray(pred, dtype=float)
+    true = np.asarray(true).astype(int)
+    binary = (pred > 0.5).astype(int)
+    prec, rec, f1, _ = precision_recall_fscore_support(
+        true, binary, average="binary", zero_division=0)
+    out = {
+        "cna_loh_accuracy": float(accuracy_score(true, binary)),
+        "cna_loh_precision": float(prec),
+        "cna_loh_recall": float(rec),
+        "cna_loh_f1": float(f1),
+    }
+    if len(np.unique(true)) > 1:  # roc_auc_score is undefined for a single class
+        out["cna_loh_auc_roc"] = float(roc_auc_score(true, pred))
+    return out
+
+
+def _snv_score_table(snv_table, probs, true_tokens, loss, ref_probs, ref_true,
+                     reverse_token_map) -> "pd.DataFrame":
+    """Input SNV table + per-variant reconstruction columns (alt_len == 1)."""
+    p = probs[:, 0, :]
+    tt = np.asarray(true_tokens)[:, 0]
+    pred_token = np.argmax(p, axis=-1)
+    observed = np.take_along_axis(p, tt[:, None], axis=1)[:, 0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        entropy = -(p * np.log(np.clip(p, 1e-12, 1.0))).sum(axis=1)
+    def base(t):
+        return reverse_token_map.get(int(t), "?")
+    s = snv_table.copy()
+    s["pred_base"] = [base(t) for t in pred_token]
+    s["pred_prob"] = np.max(p, axis=-1)
+    s["true_base"] = [base(t) for t in tt]
+    s["observed_prob"] = observed
+    s["correct"] = pred_token == tt
+    s["loss"] = np.asarray(loss)
+    s["entropy"] = entropy
+    if ref_probs is not None and ref_true is not None:
+        rp = ref_probs[:, 0, :]
+        rt = np.asarray(ref_true)[:, 0]
+        s["ref_pred_base"] = [base(np.argmax(row)) for row in rp]
+        s["ref_observed_prob"] = np.take_along_axis(rp, rt[:, None], axis=1)[:, 0]
+        s["ref_correct"] = np.argmax(rp, axis=1) == rt
+    return s
+
+
+def _cna_score_table(cna_table, seg_pred, seg_true, loh_pred, loh_true) -> "pd.DataFrame":
+    """Input CNA table + per-segment reconstruction columns."""
+    seg_pred = np.asarray(seg_pred, dtype=float)
+    seg_true = np.asarray(seg_true, dtype=float)
+    s = cna_table.copy()
+    s["segment_mean_pred"] = seg_pred
+    s["segment_mean_true"] = seg_true
+    s["abs_error"] = np.abs(seg_pred - seg_true)
+    s["signed_error"] = seg_pred - seg_true
+    if loh_pred is not None and loh_true is not None:
+        s["loh_pred"] = np.asarray(loh_pred)
+        s["loh_true"] = np.asarray(loh_true)
+    return s
+
+
+def _dummy_snv_df(sample_ids) -> "pd.DataFrame":
+    """One placeholder SNV per sample to satisfy the joint graph's SNV inputs
+    when reconstructing CNAs only. With ``cross_modal_blocks == 0`` the CNA
+    reconstruction is independent of these rows, so their values are irrelevant
+    and their outputs are never returned."""
+    s = pd.unique(np.asarray(sample_ids))
+    return pd.DataFrame({
+        "Tumor_Sample_Barcode": s,
+        "Chromosome": ["1"] * len(s),
+        "Start_Position": [1_000_000] * len(s),
+        "Reference_Allele": ["A"] * len(s),
+        "Tumor_Seq_Allele2": ["T"] * len(s),
+        "vaf": [0.5] * len(s),
+    })
+
+
+def _dummy_cna_df(sample_ids) -> "pd.DataFrame":
+    """One placeholder CNA segment per sample to satisfy the joint graph's CNA
+    inputs when reconstructing SNVs only. With ``cross_modal_blocks == 0`` the
+    SNV reconstruction is independent of these rows."""
+    s = pd.unique(np.asarray(sample_ids))
+    return pd.DataFrame({
+        "Tumor_Sample_Barcode": s,
+        "Chromosome": ["1"] * len(s),
+        "Start": [1_000_000] * len(s),
+        "End": [1_000_500] * len(s),
+        "Segment_Mean": [0.0] * len(s),
+    })
+
+
 class TESSERA(BaseModel):
     def build_model(self,
                     recon_ref = True,
@@ -2255,6 +2418,256 @@ class TESSERA(BaseModel):
             if return_predictions:
                 result.cna_predictions = self.get_cna_predictions(name)
 
+        return result
+
+    def reconstruct(
+        self,
+        snv_df: Optional[pd.DataFrame] = None,
+        cna_df: Optional[pd.DataFrame] = None,
+        from_assembly: str = "GRCh37",
+        quantile_normalize_to_tcga: bool = False,
+        return_ref: bool = True,
+        chain_file: Optional[str] = None,
+        name: str = "_reconstruct_run",
+        context_len: int = 25,
+        batch_size: int = 24,
+    ) -> "ReconstructResult":
+        """Masked-token reconstruction: dataframes in, predicted-vs-true + scores out.
+
+        Parallel to :meth:`featurize`, but instead of embeddings it returns the
+        model's *reconstruction* of each alteration — how well it predicts the
+        masked variant / segment from genomic context. The SNV alt allele is
+        architecturally hidden from its own reconstruction head (diagonal
+        self-mask), so these are genuine context-conditioned predictions, the
+        same masked-token reconstruction metric the manuscript reports
+        (``scripts/tcga_pancan_snv/get_variant_loss_acc.py`` and
+        ``scripts/tcga_pancan_cna/get_cna_loss_metrics.py``), wrapped in one call.
+
+        Mirrors :meth:`featurize`'s liftover / VAF derivation / quantile
+        normalisation / dataset construction exactly; see that method for the
+        column conventions and parameter semantics. Then runs
+        :meth:`get_variant_probabilities` (SNV) and :meth:`get_cna_predictions`
+        (CNA) in inference mode.
+
+        Parameters
+        ----------
+        snv_df, cna_df, from_assembly, quantile_normalize_to_tcga, chain_file,
+        context_len, batch_size :
+            Same as :meth:`featurize`.
+        return_ref : bool, default ``True``
+            If True (and the loaded variant has the reference-reconstruction
+            head), also return the predicted REFERENCE-allele distribution
+            (``snv_ref_*``). No-op on variants without a ref head.
+        name : str, default ``"_reconstruct_run"``
+            Internal dataset attribute name (distinct from ``featurize``'s so the
+            two never clobber each other on a shared model instance).
+
+        Returns
+        -------
+        ReconstructResult
+            Raw arrays (``snv_probabilities`` / ``snv_logits`` /
+            ``snv_true_tokens`` / ``snv_loss`` / ``snv_ref_*``;
+            ``cna_segment_mean_pred`` / ``_true`` / ``cna_loh_*``), tidy
+            ``snv_scores`` / ``cna_scores`` tables, a cohort ``metrics`` dict,
+            and ``liftover_stats``.
+        """
+        from tessera.data.liftover import lift_snv, lift_cna
+
+        if snv_df is None and cna_df is None:
+            raise ValueError("reconstruct requires at least one of snv_df or cna_df.")
+
+        # Bootstrap modality flags (use_cna_loh, use_cna, use_mut) from the
+        # model's config so the LoH gate below is correct. get_variant_features /
+        # get_cna_features do this, but reconstruct() calls neither.
+        self._load_model_config_if_needed()
+
+        liftover_stats: dict = {}
+
+        if snv_df is not None:
+            snv_df = snv_df.copy()
+            snv_df, snv_lift_stats = lift_snv(
+                snv_df, from_assembly=from_assembly, chain_file=chain_file
+            )
+            liftover_stats["snv"] = snv_lift_stats
+            if "vaf" not in snv_df.columns:
+                if {"t_alt_count", "t_ref_count"}.issubset(snv_df.columns):
+                    depth = snv_df["t_alt_count"] + snv_df["t_ref_count"]
+                    snv_df["vaf"] = np.where(depth > 0, snv_df["t_alt_count"] / depth, 0.0)
+                else:
+                    raise ValueError(
+                        "snv_df must include either a 'vaf' column or both "
+                        "'t_alt_count' and 't_ref_count'."
+                    )
+            if snv_df.empty:
+                raise ValueError(
+                    f"All SNV rows failed to lift from {from_assembly} to GRCh37."
+                )
+            snv_df = snv_df.reset_index(drop=True)
+
+        if cna_df is not None:
+            cna_df = cna_df.copy()
+            cna_df, cna_lift_stats = lift_cna(
+                cna_df, from_assembly=from_assembly, chain_file=chain_file
+            )
+            liftover_stats["cna"] = cna_lift_stats
+            if cna_df.empty:
+                raise ValueError(
+                    f"All CNA segments failed to lift from {from_assembly} to GRCh37."
+                )
+            cna_df = cna_df.reset_index(drop=True)
+
+        if cna_df is not None and quantile_normalize_to_tcga:
+            from pathlib import Path as _Path
+            import tessera.data as _td
+            from tessera.data.preprocessing import (
+                quantile_normalize_to_tcga as _qn_tcga,
+            )
+            ref_path = _Path(_td.__file__).parent / "cna_sorted.npy"
+            if not ref_path.exists():
+                raise FileNotFoundError(
+                    f"Bundled TCGA CNA reference missing at {ref_path}. "
+                    "Reinstall tessera-foundation."
+                )
+            tcga_sorted = np.load(ref_path)
+            seg = cna_df["Segment_Mean"].astype(float).values
+            cna_df = cna_df.copy()
+            cna_df["Segment_Mean"] = _qn_tcga(seg, tcga_sorted)
+
+        # A variant with a LoH head (use_cna_loh, bootstrapped from config above)
+        # declares a *required* "cna_loh" input in its reconstruction graph, so
+        # running it without LoH data fails deep inside predict() with a cryptic
+        # "Missing data for input cna_loh" error. Fail fast with guidance instead.
+        model_requires_loh = bool(getattr(self, "use_cna_loh", False))
+        if cna_df is not None and model_requires_loh and "LOH" not in cna_df.columns:
+            raise ValueError(
+                "This TESSERA variant has a LoH reconstruction head and requires "
+                "an 'LOH' column in cna_df (boolean or 0/1 per segment). Provide "
+                "one, or use the 'joint_snv_cna_noloh' variant for CNA data "
+                "without allele-specific LoH calls."
+            )
+
+        cna_lohs = None
+        if cna_df is not None and "LOH" in cna_df.columns and model_requires_loh:
+            cna_lohs = cna_df["LOH"].astype(bool).values
+
+        # The joint reconstruction model declares both SNV and CNA input layers,
+        # so predict() needs both — but with cross_modal_blocks == 0 the two
+        # reconstruction streams are independent (the SNV output is bit-identical
+        # regardless of the CNA inputs, and vice versa). When only one modality is
+        # requested we feed a throwaway placeholder for the other purely to satisfy
+        # the graph; its predictions are never read.
+        # The placeholder-fill above is only sound when the two reconstruction
+        # streams are independent, i.e. cross_modal_blocks == 0 (true for both
+        # published variants). Guard it so a future cross-modal variant fails
+        # loudly here instead of silently returning placeholder-contaminated
+        # single-modality reconstructions.
+        if (snv_df is None or cna_df is None) and getattr(self, "cross_modal_blocks", 0) > 0:
+            raise ValueError(
+                "Single-modality reconstruct() (only snv_df or only cna_df) is "
+                "supported only for variants with cross_modal_blocks == 0, where "
+                "the SNV and CNA reconstruction streams are independent. This "
+                "variant has cross-modal attention; pass both snv_df and cna_df."
+            )
+
+        snv_for_ds = snv_df if snv_df is not None else _dummy_snv_df(
+            cna_df["Tumor_Sample_Barcode"].values)
+        cna_for_ds = cna_df if cna_df is not None else _dummy_cna_df(
+            snv_df["Tumor_Sample_Barcode"].values)
+
+        ds_kwargs = dict(
+            context_len=context_len,
+            batch_size=batch_size,
+            name=name,
+            is_training=False,
+            fixed_bag_size=True,
+            ref_len=1,
+            alt_len=1,
+            z_score_cna=False,
+            z_score_clip=None,
+            sample_ids=snv_for_ds["Tumor_Sample_Barcode"].values,
+            chromosomes=snv_for_ds["Chromosome"].astype(str).values,
+            positions=snv_for_ds["Start_Position"].astype(int).values,
+            refs=snv_for_ds["Reference_Allele"].values,
+            alts=snv_for_ds["Tumor_Seq_Allele2"].values,
+            vaf=snv_for_ds["vaf"].astype(float).values,
+            cna_sample_ids=cna_for_ds["Tumor_Sample_Barcode"].values,
+            cna_chromosomes=cna_for_ds["Chromosome"].astype(str).values,
+            cna_starts=cna_for_ds["Start"].astype(int).values,
+            cna_ends=cna_for_ds["End"].astype(int).values,
+            cna_segment_means=cna_for_ds["Segment_Mean"].astype(float).values,
+            cna_lohs=cna_lohs,
+        )
+
+        self.create_sample_dataset(**ds_kwargs)
+
+        result = ReconstructResult(
+            snv_table=snv_df,
+            cna_table=cna_df,
+            liftover_stats=liftover_stats,
+        )
+        metrics: dict = {}
+
+        if snv_df is not None:
+            # Same flags as scripts/tcga_pancan_snv/get_variant_loss_acc.py.
+            out = self.get_variant_probabilities(
+                name,
+                return_logits=True,
+                return_true_values=True,
+                return_loss=True,
+                non_zero_only=False,
+                return_ref=return_ref,
+            )
+            # Order: (probs, logits, true_tokens, loss[, probs_ref, logits_ref, true_ref]).
+            # The ref tail is present only when the variant has a reference head;
+            # unpack by length so reconstruct works on both with-ref and no-ref models.
+            probs, logits, true_tokens, loss = out[0], out[1], out[2], out[3]
+            # The reference tail is all-or-nothing (probs_ref, logits_ref,
+            # true_ref); only consume it when the full 3-element tail is present
+            # so we never mis-assign a partial tail to the wrong field.
+            if len(out) >= 7:
+                ref_probs, ref_logits, ref_true = out[4], out[5], out[6]
+            else:
+                ref_probs = ref_logits = ref_true = None
+            result.snv_probabilities = probs
+            result.snv_logits = logits
+            result.snv_true_tokens = true_tokens
+            result.snv_loss = loss
+            result.snv_ref_probabilities = ref_probs
+            result.snv_ref_logits = ref_logits
+            result.snv_ref_true_tokens = ref_true
+            result.snv_scores = _snv_score_table(
+                snv_df, probs, true_tokens, loss, ref_probs, ref_true,
+                self.reverse_token_map,
+            )
+            metrics.update(_snv_recon_metrics(probs, true_tokens, loss))
+
+        if cna_df is not None:
+            # Mirror scripts/tcga_pancan_cna/get_cna_loss_metrics.py. Request LoH
+            # outputs only when LoH input was actually fed (cna_lohs is not None) —
+            # which requires both an "LOH" input column and a model with the LoH
+            # head (use_cna_loh, bootstrapped above). This keeps loh_pred/loh_true
+            # in sync and avoids get_cna_predictions concatenating empty LoH arrays.
+            want_loh = cna_lohs is not None
+            cna_out = self.get_cna_predictions(
+                name, return_true_values=True, return_loh=want_loh
+            )
+            if want_loh:
+                seg_pred, seg_true, loh_pred, loh_true = cna_out
+            else:
+                seg_pred, seg_true = cna_out
+                loh_pred = loh_true = None
+            result.cna_segment_mean_pred = seg_pred
+            result.cna_segment_mean_true = seg_true
+            result.cna_loh_pred = loh_pred
+            result.cna_loh_true = loh_true
+            result.cna_scores = _cna_score_table(
+                cna_df, seg_pred, seg_true, loh_pred, loh_true
+            )
+            metrics.update(_segment_mean_metrics(seg_pred, seg_true))
+            if loh_pred is not None and loh_true is not None:
+                metrics.update(_loh_metrics(loh_pred, loh_true))
+
+        result.metrics = metrics
         return result
 
     def _load_model_config_if_needed(self):
