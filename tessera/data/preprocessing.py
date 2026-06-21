@@ -833,3 +833,191 @@ def quantile_normalize_to_tcga(vals: np.ndarray, tcga_sorted: np.ndarray) -> np.
     q = (ranks - 0.5) / n
     tcga_q = np.linspace(0.0, 1.0, len(tcga_sorted))
     return np.interp(q, tcga_q, tcga_sorted)
+
+
+#: Locus columns that uniquely identify a single-base substitution. Used to derive
+#: cohort recurrence when the caller has not supplied an explicit ``mut_id`` column.
+SNV_LOCUS_COLS = ["Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]
+
+
+def subsample_snv(
+    snv_df: pd.DataFrame,
+    max_variants: int = 1000,
+    min_recurrence: int = 5,
+    sample_col: str = "Tumor_Sample_Barcode",
+    random_state: Optional[int] = 42,
+) -> pd.DataFrame:
+    """Cap variants per sample, preserving variants recurrent across the cohort.
+
+    TESSERA featurizes each sample as a *bag* of its alterations, padded to the
+    cohort's largest sample (``fixed_bag_size``), so attention cost and peak memory
+    scale with the maximum per-sample count -- O(bag^2). Capping each sample keeps
+    featurization tractable on large cohorts or hypermutators with a negligible
+    effect on the pooled embedding. This is the exact SNV subsampler used to build
+    the TESSERA pretraining set (``scripts/data/tcga``).
+
+    For each sample, every variant whose locus recurs in at least ``min_recurrence``
+    samples cohort-wide is kept (a low-cost proxy for recurrent / driver
+    alterations); the remaining budget up to ``max_variants`` is filled with a
+    uniform random draw from that sample's other variants. Samples with at most
+    ``max_variants`` variants are returned unchanged.
+
+    The cap is **soft**: recurrent variants are never dropped, so a sample whose
+    recurrent variants alone exceed ``max_variants`` keeps all of them and its
+    returned count exceeds ``max_variants``. If you need a hard ceiling to bound
+    peak memory, check per-sample counts on the result and raise ``min_recurrence``
+    until the recurrent set fits.
+
+    Args:
+        snv_df: One row per variant, using :func:`tessera.featurize` column names:
+            ``sample_col`` plus either an explicit ``mut_id`` column or the locus
+            columns ``Chromosome``, ``Start_Position``, ``Reference_Allele``,
+            ``Tumor_Seq_Allele2`` (from which recurrence is derived). Extra columns
+            (``vaf``, annotations, ...) are carried through unchanged.
+        max_variants: Maximum variants kept per sample (TESSERA pretraining value);
+            a soft cap -- see above.
+        min_recurrence: Minimum number of records a locus must appear in to be
+            preserved as recurrent (counted by record, matching the pretraining
+            pipeline; for one-row-per-variant-per-sample tables this equals the
+            number of samples). Recurrence is relative to the cohort in ``snv_df``;
+            with a single sample nothing is recurrent and the cap is a pure random
+            draw. Set above the cohort size to disable preservation. Must be > 0.
+        sample_col: Column identifying the sample.
+        random_state: Seed for the within-sample random draw (reproducible default).
+
+    Returns:
+        Subsampled copy, reset-indexed, with the same columns as ``snv_df`` (a
+        ``mut_id`` derived internally is not added to the output).
+
+    Note:
+        If ``snv_df`` already has a ``mut_id`` column it is used verbatim as the
+        recurrence key and the locus columns are ignored; otherwise ``mut_id`` is
+        derived from the locus columns. ``Hugo_Symbol`` is intentionally excluded
+        (not part of the ``featurize`` schema and redundant with locus), so
+        recurrence is locus-based.
+
+    Example:
+        >>> import tessera                                                       # doctest: +SKIP
+        >>> small = tessera.data.preprocessing.subsample_snv(snv_df, max_variants=1000)  # doctest: +SKIP
+        >>> result = tessera.featurize(snv_df=small, cna_df=cna_df)              # doctest: +SKIP
+    """
+    if sample_col not in snv_df.columns:
+        raise KeyError(f"snv_df is missing the sample column {sample_col!r}")
+    if max_variants <= 0:
+        raise ValueError(f"max_variants must be positive, got {max_variants}")
+    if min_recurrence <= 0:
+        raise ValueError(f"min_recurrence must be positive, got {min_recurrence}")
+    if len(snv_df) == 0:
+        return snv_df.reset_index(drop=True)
+
+    # Recurrence key: an explicit ``mut_id`` if present, else a locus key built
+    # vectorized as a Series -- never added to the frame, so the caller's columns
+    # and memory footprint are untouched.
+    if "mut_id" in snv_df.columns:
+        key = snv_df["mut_id"].astype(str)
+    else:
+        missing = [c for c in SNV_LOCUS_COLS if c not in snv_df.columns]
+        if missing:
+            raise KeyError(
+                "subsample_snv needs either a 'mut_id' column or the locus columns "
+                f"{SNV_LOCUS_COLS}; missing {missing}."
+            )
+        key = (snv_df["Chromosome"].astype(str) + ":"
+               + snv_df["Start_Position"].astype(str) + ":"
+               + snv_df["Reference_Allele"].astype(str) + ":"
+               + snv_df["Tumor_Seq_Allele2"].astype(str))
+
+    counts = key.value_counts()
+    common = set(counts[counts >= min_recurrence].index)
+    is_common = key.isin(common).to_numpy()
+
+    # Select kept rows per sample by positional index, then slice the original
+    # frame. This keeps every column (incl. ``sample_col``) and does not depend on
+    # pandas' groupby.apply grouping-column inclusion, whose default changes across
+    # pandas versions.
+    kept = []
+    for _, pos in snv_df.groupby(sample_col, sort=False).indices.items():
+        common_pos = pos[is_common[pos]]
+        slots = max_variants - len(common_pos)
+        if slots <= 0:
+            kept.append(common_pos)
+            continue
+        rest_pos = pos[~is_common[pos]]
+        if len(rest_pos) == 0:
+            kept.append(common_pos)
+            continue
+        n = min(len(rest_pos), slots)
+        sampled = pd.Series(rest_pos).sample(
+            n=n, replace=False, random_state=random_state).to_numpy()
+        kept.append(np.concatenate([common_pos, sampled]))
+
+    keep_pos = np.concatenate(kept) if kept else np.empty(0, dtype=int)
+    return snv_df.iloc[keep_pos].reset_index(drop=True)
+
+
+def subsample_cna(
+    cna_df: pd.DataFrame,
+    max_segments: int = 1000,
+    loh_weight: float = 0.5,
+    sample_col: str = "Tumor_Sample_Barcode",
+) -> pd.DataFrame:
+    """Cap segments per sample by copy-number alteration magnitude.
+
+    The CNA counterpart to :func:`subsample_snv` (same bag-size / memory rationale).
+    Each segment is scored by ``|Segment_Mean| + loh_weight * LOH`` and the top
+    ``max_segments`` per sample are kept; samples with at most ``max_segments``
+    segments are returned unchanged. This is the exact CNA subsampler used to build
+    the TESSERA pretraining set. The ``LOH`` term is optional: when the column is
+    absent the score is simply ``|Segment_Mean|`` (appropriate for the no-LoH model
+    variant or copy-number calls without an LoH flag).
+
+    Args:
+        cna_df: One row per segment, using :func:`tessera.featurize` column names:
+            ``sample_col``, ``Segment_Mean`` (log2 ratio), optionally ``LOH`` (0/1).
+            Extra columns (``Chromosome``, ``Start``, ``End``, ...) are carried through.
+        max_segments: Maximum segments kept per sample (TESSERA pretraining value).
+        loh_weight: Bonus added to ``|Segment_Mean|`` for LoH segments. Ignored when
+            there is no ``LOH`` column.
+        sample_col: Column identifying the sample.
+
+    Returns:
+        Subsampled copy, reset-indexed, with the same columns as ``cna_df``.
+
+    Note:
+        ``Segment_Mean`` must be finite. Non-finite values are not sanitized:
+        ``+/-inf`` ranks as the most-altered (always kept) and ``NaN`` sinks to the
+        bottom (dropped first when a sample is over the cap, passed through
+        otherwise). Clip or drop non-finite segments before calling.
+
+    Example:
+        >>> import tessera                                                       # doctest: +SKIP
+        >>> small = tessera.data.preprocessing.subsample_cna(cna_df, max_segments=1000)  # doctest: +SKIP
+        >>> result = tessera.featurize(snv_df=snv_df, cna_df=small)              # doctest: +SKIP
+    """
+    if sample_col not in cna_df.columns:
+        raise KeyError(f"cna_df is missing the sample column {sample_col!r}")
+    if "Segment_Mean" not in cna_df.columns:
+        raise KeyError("cna_df is missing the required 'Segment_Mean' column")
+    if max_segments <= 0:
+        raise ValueError(f"max_segments must be positive, got {max_segments}")
+    if len(cna_df) == 0:
+        return cna_df.reset_index(drop=True)
+
+    # Score each segment without writing a column to the frame (so a caller column
+    # named like the internal score is never shadowed or dropped). LOH is optional.
+    score = cna_df["Segment_Mean"].abs().to_numpy()
+    if "LOH" in cna_df.columns:
+        score = score + cna_df["LOH"].astype(float).to_numpy() * loh_weight
+
+    # Keep the top ``max_segments`` per sample by score, selected by positional
+    # index (independent of groupby.apply grouping-column semantics).
+    kept = []
+    for _, pos in cna_df.groupby(sample_col, sort=False).indices.items():
+        if len(pos) <= max_segments:
+            kept.append(pos)
+            continue
+        top = pd.Series(score[pos], index=pos).nlargest(max_segments).index.to_numpy()
+        kept.append(top)
+
+    keep_pos = np.concatenate(kept) if kept else np.empty(0, dtype=int)
+    return cna_df.iloc[keep_pos].reset_index(drop=True)

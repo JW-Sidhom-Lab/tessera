@@ -1,0 +1,18 @@
+# Changelog
+
+## 0.1.6
+
+- `tessera.featurize` / `tessera.reconstruct`: new `batch_size` parameter (default 24),
+  forwarded to the underlying model methods, to bound peak memory on large cohorts or
+  samples with very large variant/segment bags. Results are identical regardless of
+  batching (the bag is padded to the cohort maximum either way).
+- `tessera.data.preprocessing.subsample_snv` / `subsample_cna`: new supported helpers —
+  the per-sample variant/segment caps used to build the TESSERA pretraining data.
+  `subsample_snv` keeps variants recurrent across the cohort (a driver/hotspot proxy)
+  then random-fills the budget; `subsample_cna` keeps the largest-magnitude segments
+  (with an optional `LOH` bonus). Both use the same column schema as `featurize`.
+
+## 0.1.5
+
+- `reconstruct()` reports the manuscript Ref/Alt joint SNV reconstruction accuracy
+  (`snv_joint_accuracy`) alongside the alt-only accuracy.

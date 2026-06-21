@@ -111,6 +111,7 @@ def featurize(
     repo_id: str = DEFAULT_REPO_ID,
     return_predictions: bool = False,
     chain_file=None,
+    batch_size: int = 24,
     **load_kwargs,
 ):
     """Single-call inference: dataframes in, embeddings out.
@@ -149,6 +150,11 @@ def featurize(
         Explicit UCSC chain file path; falls through to
         ``TESSERA_LIFTOVER_CHAIN`` env var or pyliftover's auto-download
         otherwise.
+    batch_size
+        Number of samples per forward pass (default 24). Lower it to bound
+        peak memory on large cohorts or samples with very large variant /
+        segment bags (the bag is padded to the cohort max, so attention is
+        O(bag^2) per sample); results are identical regardless of batching.
     **load_kwargs
         Forwarded to :func:`load_pretrained` on first use of a given
         ``(variant, repo_id)`` pair.
@@ -173,6 +179,7 @@ def featurize(
         quantile_normalize_to_tcga=quantile_normalize_to_tcga,
         return_predictions=return_predictions,
         chain_file=chain_file,
+        batch_size=batch_size,
     )
 
 
@@ -185,6 +192,7 @@ def reconstruct(
     repo_id: str = DEFAULT_REPO_ID,
     return_ref: bool = True,
     chain_file=None,
+    batch_size: int = 24,
     **load_kwargs,
 ):
     """Single-call masked-token reconstruction: dataframes in, predicted-vs-true + scores out.
@@ -198,8 +206,10 @@ def reconstruct(
 
     Parameters mirror :func:`featurize` (``snv_df``, ``cna_df``, ``variant``,
     ``from_assembly``, ``quantile_normalize_to_tcga``, ``repo_id``, ``chain_file``,
-    ``**load_kwargs``), plus ``return_ref`` (default True) to also return the
-    predicted reference-allele distribution when the variant has a reference head.
+    ``batch_size``, ``**load_kwargs``), plus ``return_ref`` (default True) to also
+    return the predicted reference-allele distribution when the variant has a
+    reference head. Lower ``batch_size`` (default 24) to bound peak memory on large
+    cohorts or large variant/segment bags; results are identical regardless.
 
     Returns
     -------
@@ -221,4 +231,5 @@ def reconstruct(
         quantile_normalize_to_tcga=quantile_normalize_to_tcga,
         return_ref=return_ref,
         chain_file=chain_file,
+        batch_size=batch_size,
     )

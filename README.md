@@ -42,6 +42,7 @@ result = tessera.featurize(
     variant="joint_snv_cna_noloh",        # or "joint_snv_cna" (with-LoH)
     from_assembly="GRCh37",               # "GRCh38" triggers UCSC liftover
     quantile_normalize_to_tcga=False,     # set True for panel/cell-line data
+    batch_size=24,                        # lower to bound peak memory (see below)
 )
 
 result.snv_features      # (n_variants, 1169)  per-variant embeddings
@@ -70,6 +71,22 @@ TESSERA was pretrained on TCGA whole-exome ABSOLUTE Segment_Means (median 0.000,
 | Cell-line data (DepMap, CCLE) | **`True`** | Raw log2-ratios are right-shifted; DepMap median ≈ +1.0 vs TCGA's 0.0 (KS = 0.72). |
 
 The bundled reference (`tessera/data/cna_sorted.npy`, 7 MB, 1.8 M segments) is loaded automatically when `True`. The helper `tessera.data.preprocessing.quantile_normalize_to_tcga` is also exposed if you'd rather pre-normalize.
+
+### Capping very large samples (`subsample_snv` / `subsample_cna`)
+
+TESSERA pads every sample's alteration bag to the cohort maximum (`fixed_bag_size`), so attention cost and peak memory scale with the **largest** sample — O(bag²). A single hypermutator (tens of thousands of SNVs) can therefore blow up memory for the whole cohort. Two levers keep featurisation tractable: lower `batch_size` (bounds the batch dimension; results are identical) and cap each sample's bag. The pretraining pipeline caps samples to 1,000 variants and 1,000 segments, and the same helpers are exposed for inference:
+
+```python
+from tessera.data import preprocessing
+
+snv_df = preprocessing.subsample_snv(snv_df, max_variants=1000)   # keep recurrent variants, random-fill the rest
+cna_df = preprocessing.subsample_cna(cna_df, max_segments=1000)   # keep the largest-magnitude segments
+result = tessera.featurize(snv_df=snv_df, cna_df=cna_df)
+```
+
+`tessera.data.preprocessing.subsample_snv` preserves every variant recurrent across ≥ `min_recurrence` samples (a driver/hotspot proxy) before random-filling the budget; `tessera.data.preprocessing.subsample_cna` keeps the top segments by `|Segment_Mean|` (plus an optional `LOH` bonus). Both take the same column names as `featurize`, return a tidy subset, and reproduce the recipe used to build the pretraining data. The pooled embedding of a capped sample is statistically indistinguishable from the full one; preserve the true alteration counts separately if you need them as features (TMB, burden).
+
+Two caveats: `max_variants` is a **soft** cap — recurrent variants are never dropped, so a sample whose recurrent variants alone exceed it keeps them all (raise `min_recurrence` if you need a hard bound). And `subsample_cna` expects **finite** `Segment_Mean` — clip or drop `inf`/`NaN` before calling, since `inf` sorts as the most-altered segment and `NaN` is dropped first.
 
 ### Lower-level building blocks
 
