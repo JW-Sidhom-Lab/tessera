@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- `lift_snv` / `lift_cna` (and thus `featurize` / `reconstruct` on non-GRCh37 input):
+  coordinates that lift onto a non-canonical contig absent from the bundled GRCh37
+  reference (e.g. `chrUn_gl000211`) are now dropped — like unliftable coordinates —
+  instead of crashing the downstream sequence-context lookup. The liftover stats gain an
+  `n_noncanonical` field reporting how many were dropped for this reason. Fixes a crash on
+  GRCh38/hg38 inputs.
+
 ## 0.1.6
 
 - `tessera.featurize` / `tessera.reconstruct`: new `batch_size` parameter (default 24),

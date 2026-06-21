@@ -47,6 +47,12 @@ _ASSEMBLY_ALIASES = {
 
 _DEST_NAME = "hg19"   # TESSERA's training assembly; not a parameter on purpose.
 
+# Chromosomes present in TESSERA's bundled GRCh37 reference (autosomes + X/Y).
+# pyliftover can map a coordinate onto an alt / unplaced contig (e.g. chrUn_gl000211)
+# that the reference FASTA does not contain; such lifts are dropped — like unliftable
+# coordinates — rather than crashing the downstream sequence-context lookup.
+_CANONICAL_CHROMS = frozenset([str(i) for i in range(1, 23)] + ["X", "Y"])
+
 _LIFTERS: dict = {}   # cache: (src, dst, chain_path_or_None) -> LiftOver instance
 
 
@@ -105,12 +111,15 @@ def lift_snv(
 
     Returns:
         Tuple ``(out_df, stats)`` where ``stats`` is
-        ``{'n_in', 'n_out', 'n_dropped'}``. Variants whose coordinates
-        cannot be lifted are dropped from ``out_df``.
+        ``{'n_in', 'n_out', 'n_dropped', 'n_noncanonical'}``. Variants whose
+        coordinates cannot be lifted, or that lift onto a non-canonical contig
+        absent from TESSERA's reference (autosomes + X/Y), are dropped;
+        ``n_noncanonical`` counts the latter.
     """
     lift = _get_lifter(from_assembly, chain_file=chain_file)
     if lift is None:
-        return df.copy(), {"n_in": len(df), "n_out": len(df), "n_dropped": 0}
+        return df.copy(), {"n_in": len(df), "n_out": len(df), "n_dropped": 0,
+                           "n_noncanonical": 0}
 
     chrom_in = "chr" + df["Chromosome"].astype(str)
     pos_in   = df["Start_Position"].astype(int)
@@ -118,18 +127,22 @@ def lift_snv(
     new_chrom: list = []
     new_pos:   list = []
     keep_mask: list = []
+    n_noncanonical = 0
     for c, p in zip(chrom_in, pos_in):
         result = lift.convert_coordinate(c, int(p) - 1)   # pyliftover is 0-based
         if result:
             tc, tp, _, _ = result[0]
-            new_chrom.append(_strip_chr(tc))
-            new_pos.append(int(tp) + 1)
-            keep_mask.append(True)
-        else:
-            new_chrom.append(None)
-            new_pos.append(None)
-            keep_mask.append(False)
-    keep_mask_arr = np.array(keep_mask)
+            sc = _strip_chr(tc)
+            if sc in _CANONICAL_CHROMS:
+                new_chrom.append(sc)
+                new_pos.append(int(tp) + 1)
+                keep_mask.append(True)
+                continue
+            n_noncanonical += 1               # lifted onto an alt/unplaced contig
+        new_chrom.append(None)
+        new_pos.append(None)
+        keep_mask.append(False)
+    keep_mask_arr = np.array(keep_mask, dtype=bool)
     out = df.loc[keep_mask_arr].copy().reset_index(drop=True)
     out["Chromosome"]     = [c for c, k in zip(new_chrom, keep_mask) if k]
     out["Start_Position"] = [p for p, k in zip(new_pos,   keep_mask) if k]
@@ -137,6 +150,7 @@ def lift_snv(
         "n_in": len(df),
         "n_out": len(out),
         "n_dropped": int((~keep_mask_arr).sum()),
+        "n_noncanonical": n_noncanonical,
     }
 
 
@@ -147,9 +161,11 @@ def lift_cna(
 ) -> Tuple[pd.DataFrame, dict]:
     """Lift CNA segment coordinates to GRCh37/hg19.
 
-    Both segment endpoints must lift to the same hg19 chromosome or the
-    segment is dropped. Returned ``Start`` / ``End`` are re-sorted so
-    ``Start <= End`` even if the chain inverts orientation.
+    Both segment endpoints must lift to the same hg19 chromosome, and that
+    chromosome must be canonical (autosomes + X/Y, present in TESSERA's
+    reference) — otherwise the segment is dropped (``n_noncanonical`` counts
+    segments dropped for the latter reason). Returned ``Start`` / ``End`` are
+    re-sorted so ``Start <= End`` even if the chain inverts orientation.
 
     Args:
         df: DataFrame with at least ``Chromosome``, ``Start``, ``End``
@@ -164,10 +180,12 @@ def lift_cna(
     """
     lift = _get_lifter(from_assembly, chain_file=chain_file)
     if lift is None:
-        return df.copy(), {"n_in": len(df), "n_out": len(df), "n_dropped": 0}
+        return df.copy(), {"n_in": len(df), "n_out": len(df), "n_dropped": 0,
+                           "n_noncanonical": 0}
 
     rows_out: list = []
     n_dropped = 0
+    n_noncanonical = 0
     for _, row in df.iterrows():
         chrom_in = "chr" + str(row["Chromosome"])
         s = lift.convert_coordinate(chrom_in, int(row["Start"]) - 1)
@@ -180,14 +198,20 @@ def lift_cna(
         if sc != ec:
             n_dropped += 1
             continue
+        sc_stripped = _strip_chr(sc)
+        if sc_stripped not in _CANONICAL_CHROMS:   # alt/unplaced contig absent from ref
+            n_dropped += 1
+            n_noncanonical += 1
+            continue
         new = row.copy()
-        new["Chromosome"] = _strip_chr(sc)
+        new["Chromosome"] = sc_stripped
         a, b = sorted([int(sp) + 1, int(ep) + 1])
         new["Start"] = a
         new["End"]   = b
         rows_out.append(new)
     out = pd.DataFrame(rows_out).reset_index(drop=True) if rows_out else df.iloc[0:0].copy()
-    return out, {"n_in": len(df), "n_out": len(out), "n_dropped": n_dropped}
+    return out, {"n_in": len(df), "n_out": len(out), "n_dropped": n_dropped,
+                 "n_noncanonical": n_noncanonical}
 
 
 __all__ = ["lift_snv", "lift_cna"]
